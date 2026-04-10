@@ -38,6 +38,7 @@ export interface FavoriteStation {
   postCode: number;
   lat: number;
   lng: number;
+  dist?: number;
 }
 
 export interface OpeningTime {
