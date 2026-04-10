@@ -282,7 +282,7 @@ export default function App() {
 
       {/* ── Sticky footer ── */}
       <footer className="app-footer">
-        Fuel data:{" "}
+        v{__APP_VERSION__} · Fuel data:{" "}
         <a href="https://www.tankerkoenig.de" target="_blank" rel="noreferrer">
           Tankerkönig
         </a>{" "}

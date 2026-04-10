@@ -137,9 +137,16 @@ export default function Favorites({
               <button
                 className={`sort-btn${sortBy === "price" ? " active" : ""}`}
                 onClick={() => setSortBy("price")}
-                title="Sort by price"
+                title="Sort by price (selected fuel)"
               >
                 Price
+              </button>
+              <button
+                className={`sort-btn${sortBy === "cheapest" ? " active" : ""}`}
+                onClick={() => setSortBy("cheapest")}
+                title="Sort by cheapest fuel overall"
+              >
+                Cheapest
               </button>
             </div>
             <button

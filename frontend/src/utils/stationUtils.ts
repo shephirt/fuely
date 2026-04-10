@@ -1,7 +1,7 @@
 import type { Station, FavoriteStation, FuelType, StationPrice } from "../types";
 
 export type SortFuel = "e5" | "e10" | "diesel" | "cheapest";
-export type SortBy = "distance" | "price";
+export type SortBy = "distance" | "price" | "cheapest";
 
 /** Pick the relevant price for a station from its inline fields or a PriceMap entry. */
 export function pickPrice(
@@ -36,7 +36,8 @@ export function effectiveSortFuel(
   return sortFuel;
 }
 
-/** Sort a list of stations by distance or price. Stations without a price sink to the bottom. */
+/** Sort a list of stations by distance, price (per effective fuel), or absolute cheapest across all fuels.
+ *  Stations without a price sink to the bottom. */
 export function sortStations<T extends Station | FavoriteStation>(
   stations: T[],
   sortBy: SortBy,
@@ -46,9 +47,11 @@ export function sortStations<T extends Station | FavoriteStation>(
   if (sortBy === "distance") {
     return [...stations].sort((a, b) => (a.dist ?? 0) - (b.dist ?? 0));
   }
+  // "cheapest": always sort by the minimum across all three fuels
+  const resolveFuel: SortFuel = sortBy === "cheapest" ? "cheapest" : fuel;
   return [...stations].sort((a, b) => {
-    const pa = pickPrice(a, prices?.[a.id], fuel);
-    const pb = pickPrice(b, prices?.[b.id], fuel);
+    const pa = pickPrice(a, prices?.[a.id], resolveFuel);
+    const pb = pickPrice(b, prices?.[b.id], resolveFuel);
     const aValid = typeof pa === "number";
     const bValid = typeof pb === "number";
     if (!aValid && !bValid) return 0;
