@@ -633,12 +633,20 @@ a:hover { text-decoration: underline; }
   font-weight: 700;
   color: var(--color-text);
 }
+.price-total {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+  white-space: nowrap;
+}
 
 .station-footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
 }
 .status-badge {
   font-size: 11px;
@@ -666,7 +674,8 @@ a:hover { text-decoration: underline; }
   padding: 2px 7px;
   white-space: nowrap;
 }
-.detour-badge.baseline  { background: rgba(62, 207, 110, 0.15); color: var(--color-open); }
+.detour-badge.nearest   { background: rgba(150, 150, 150, 0.15); color: #888; }
+.detour-badge.baseline  { background: rgba(62, 207, 110, 0.15);  color: var(--color-open); }
 .detour-badge.warning   { background: rgba(245, 197, 24, 0.15);  color: var(--color-gold); }
 .detour-badge.expensive { background: rgba(224, 92, 92, 0.15);   color: var(--color-closed); }
 

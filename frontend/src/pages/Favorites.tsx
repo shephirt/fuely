@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { getPrices } from "../api";
 import type { FavoriteStation, FuelType, PriceMap } from "../types";
-import type { SortFuel, SortBy } from "../utils/stationUtils";
+import type { SortFuel, SortBy, DetourResult } from "../utils/stationUtils";
 import { effectiveSortFuel, sortStations, sortByDetourCost, pickPrice, calcDetourCost } from "../utils/stationUtils";
 import StationCard from "../components/StationCard";
 import Map, { type MapHandle } from "../components/Map";
@@ -99,27 +99,27 @@ export default function Favorites({
     (f) => !prices[f.id] || prices[f.id].status === "open"
   );
 
-  // Baseline: station with the lowest price for the effective fuel, independent of sort order
-  let baselinePrice: number | false | undefined;
-  let baselineDist = 0;
+  // Nearest open favorite with a valid price — the natural reference point
+  let nearestPrice: number | false | undefined;
+  let nearestDist = 0;
   for (const s of openFavorites) {
     const p = pickPrice(s, prices[s.id], fuel);
     if (typeof p === "number") {
-      if (typeof baselinePrice !== "number" || p < baselinePrice) {
-        baselinePrice = p;
-        baselineDist = s.dist ?? 0;
+      if (nearestPrice === undefined || (s.dist ?? 0) < nearestDist) {
+        nearestPrice = p;
+        nearestDist = s.dist ?? 0;
       }
     }
   }
 
   // Pre-compute detour costs for all open favorites (needed for display and cheapest sort)
-  const detourCostMap: Record<string, number | "baseline" | undefined> = {};
+  const detourCostMap: Record<string, DetourResult | undefined> = {};
   for (const s of openFavorites) {
     detourCostMap[s.id] = calcDetourCost(
       pickPrice(s, prices[s.id], fuel),
-      baselinePrice,
       s.dist ?? 0,
-      baselineDist,
+      nearestPrice,
+      nearestDist,
       fillVolume,
       consumption,
       detourFactor
@@ -189,6 +189,7 @@ export default function Favorites({
               price={prices[station.id]}
               isFavorite={favoriteIds.has(station.id)}
               selectedFuel={selectedFuel}
+              fillVolume={fillVolume}
               detourCost={detourCostMap[station.id]}
               isSelected={selectedStationId === station.id}
               cardRef={(el) => {

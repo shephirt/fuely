@@ -1,5 +1,6 @@
 import type { Ref } from "react";
 import type { Station, FavoriteStation, FuelType, StationPrice } from "../types";
+import type { DetourResult } from "../utils/stationUtils";
 
 interface StationCardProps {
   station: Station | FavoriteStation;
@@ -8,7 +9,8 @@ interface StationCardProps {
   dist?: number;
   isFavorite: boolean;
   selectedFuel: FuelType;
-  detourCost?: number | "baseline";
+  fillVolume?: number;
+  detourCost?: DetourResult;
   isSelected?: boolean;
   cardRef?: Ref<HTMLDivElement>;
   onToggleFavorite: (station: Station | FavoriteStation) => void;
@@ -20,32 +22,79 @@ function formatPrice(price: number | false | undefined): string {
   return `€ ${price.toFixed(3)}`;
 }
 
+function formatTotal(price: number | false | undefined, fillVolume: number | undefined): string | null {
+  if (typeof price !== "number" || !fillVolume) return null;
+  return `€ ${(price * fillVolume).toFixed(2)} total`;
+}
+
 function PriceBadge({
   label,
   price,
   highlighted,
+  fillVolume,
 }: {
   label: string;
   price: number | false | undefined;
   highlighted: boolean;
+  fillVolume?: number;
 }) {
+  const total = formatTotal(price, fillVolume);
   return (
     <div className={`price-badge${highlighted ? " highlighted" : ""}`}>
       <span className="price-label">{label}</span>
       <span className="price-value">{formatPrice(price)}</span>
+      {total && <span className="price-total">{total}</span>}
     </div>
   );
 }
 
-function DetourBadge({ cost }: { cost: number | "baseline" }) {
-  if (cost === "baseline") {
-    return <span className="detour-badge baseline">Cheapest</span>;
+function DetourBadge({ cost }: { cost: DetourResult }) {
+  if (cost.kind === "nearest") {
+    return (
+      <span className="detour-badge nearest">
+        Nearest station · reference point
+      </span>
+    );
   }
-  const cls = cost <= 0 ? "baseline" : cost <= 2 ? "warning" : "expensive";
-  const sign = cost > 0 ? "+" : "";
+
+  const { netSaving, hasDetour } = cost;
+
+  // Station is closer or same distance — no detour, pure price comparison
+  if (!hasDetour) {
+    if (netSaving >= 0) {
+      // Closer AND cheaper — straightforward saving
+      return (
+        <span className="detour-badge baseline">
+          Saves € {netSaving.toFixed(2)} vs nearest
+        </span>
+      );
+    }
+    // Closer but more expensive
+    return (
+      <span className="detour-badge expensive">
+        € {Math.abs(netSaving).toFixed(2)} more expensive to fill
+      </span>
+    );
+  }
+
+  // Station is farther — detour is involved
+  if (netSaving >= 0) {
+    return (
+      <span className="detour-badge baseline">
+        Detour saves € {netSaving.toFixed(2)} · Worth it
+      </span>
+    );
+  }
+  if (netSaving >= -1) {
+    return (
+      <span className="detour-badge warning">
+        Detour costs € {Math.abs(netSaving).toFixed(2)} extra · Barely worth it
+      </span>
+    );
+  }
   return (
-    <span className={`detour-badge ${cls}`}>
-      {sign}{cost.toFixed(2)} €/100 km
+    <span className="detour-badge expensive">
+      Detour costs € {Math.abs(netSaving).toFixed(2)} extra · Not worth it
     </span>
   );
 }
@@ -57,6 +106,7 @@ export default function StationCard({
   dist,
   isFavorite,
   selectedFuel,
+  fillVolume,
   detourCost,
   isSelected,
   cardRef,
@@ -125,16 +175,19 @@ export default function StationCard({
           label="E5"
           price={e5 as number | false | undefined}
           highlighted={selectedFuel === "e5" || selectedFuel === "all"}
+          fillVolume={fillVolume}
         />
         <PriceBadge
           label="E10"
           price={e10 as number | false | undefined}
           highlighted={selectedFuel === "e10" || selectedFuel === "all"}
+          fillVolume={fillVolume}
         />
         <PriceBadge
           label="Diesel"
           price={diesel as number | false | undefined}
           highlighted={selectedFuel === "diesel" || selectedFuel === "all"}
+          fillVolume={fillVolume}
         />
       </div>
 

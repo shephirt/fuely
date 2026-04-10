@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { getNearby } from "../api";
 import type { Station, FuelType, FavoriteStation } from "../types";
 import type { LocationState } from "../App";
-import type { SortFuel, SortBy } from "../utils/stationUtils";
+import type { SortFuel, SortBy, DetourResult } from "../utils/stationUtils";
 import { effectiveSortFuel, sortStations, sortByDetourCost, pickPrice, calcDetourCost } from "../utils/stationUtils";
 import StationCard from "../components/StationCard";
 import Map, { type MapHandle } from "../components/Map";
@@ -83,27 +83,27 @@ export default function Nearby({
   const fuel = effectiveSortFuel(selectedFuel, sortFuel);
   const openStations = stations.filter((s) => s.isOpen);
 
-  // Baseline: station with the lowest price for the effective fuel, independent of sort order
-  let baselinePrice: number | false | undefined;
-  let baselineDist = 0;
+  // Nearest open station with a valid price — the natural reference point
+  let nearestPrice: number | false | undefined;
+  let nearestDist = 0;
   for (const s of openStations) {
     const p = pickPrice(s, undefined, fuel);
     if (typeof p === "number") {
-      if (typeof baselinePrice !== "number" || p < baselinePrice) {
-        baselinePrice = p;
-        baselineDist = s.dist ?? 0;
+      if (nearestPrice === undefined || (s.dist ?? 0) < nearestDist) {
+        nearestPrice = p;
+        nearestDist = s.dist ?? 0;
       }
     }
   }
 
-  // Pre-compute detour costs for all open stations (needed for both display and cheapest sort)
-  const detourCostMap: Record<string, number | "baseline" | undefined> = {};
+  // Pre-compute trip costs for all open stations (needed for both display and cheapest sort)
+  const detourCostMap: Record<string, DetourResult | undefined> = {};
   for (const s of openStations) {
     detourCostMap[s.id] = calcDetourCost(
       pickPrice(s, undefined, fuel),
-      baselinePrice,
       s.dist ?? 0,
-      baselineDist,
+      nearestPrice,
+      nearestDist,
       fillVolume,
       consumption,
       detourFactor
@@ -189,6 +189,7 @@ export default function Nearby({
               selectedFuel={selectedFuel}
               isOpen={station.isOpen}
               dist={station.dist}
+              fillVolume={fillVolume}
               detourCost={detourCostMap[station.id]}
               isSelected={selectedStationId === station.id}
               cardRef={(el) => {
