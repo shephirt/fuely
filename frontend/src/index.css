@@ -152,6 +152,33 @@ a:hover { text-decoration: underline; }
 }
 .settings-select:focus { border-color: var(--color-accent); }
 
+/* Home address row in settings */
+.settings-row--home { align-items: flex-start; }
+.settings-home-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+.settings-home-picker .location-picker { width: 100%; }
+.btn-clear-home {
+  align-self: flex-start;
+  font-size: 12px;
+  padding: 3px 8px;
+}
+
+/* Home address active banner in Favorites */
+.home-address-info {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 5px 10px;
+  margin-bottom: 6px;
+}
+
 /* ── Tab nav (inside header) ──────────────────────────────────────── */
 .tab-nav {
   display: flex;

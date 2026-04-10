@@ -2,9 +2,10 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { getPrices } from "../api";
 import type { FavoriteStation, FuelType, PriceMap } from "../types";
 import type { SortFuel, SortBy, DetourResult } from "../utils/stationUtils";
-import { effectiveSortFuel, sortStations, sortByDetourCost, pickPrice, calcDetourCost } from "../utils/stationUtils";
+import { effectiveSortFuel, sortStations, sortByDetourCost, pickPrice, calcDetourCost, haversineKm } from "../utils/stationUtils";
 import StationCard from "../components/StationCard";
 import Map, { type MapHandle } from "../components/Map";
+import type { LocationState } from "../App";
 
 interface FavoritesProps {
   favorites: FavoriteStation[];
@@ -14,6 +15,7 @@ interface FavoritesProps {
   consumption: number;
   fillVolume: number;
   detourFactor: number;
+  homeAddress: LocationState | null;
 }
 
 export default function Favorites({
@@ -24,6 +26,7 @@ export default function Favorites({
   consumption,
   fillVolume,
   detourFactor,
+  homeAddress,
 }: FavoritesProps) {
   const [prices, setPrices] = useState<PriceMap>({});
   const [loading, setLoading] = useState(false);
@@ -99,15 +102,22 @@ export default function Favorites({
     (f) => !prices[f.id] || prices[f.id].status === "open"
   );
 
+  /** Resolve the distance for a station: from homeAddress if set, otherwise stored dist. */
+  const stationDist = (s: FavoriteStation): number => {
+    if (homeAddress) return haversineKm(homeAddress.lat, homeAddress.lng, s.lat, s.lng);
+    return s.dist ?? 0;
+  };
+
   // Nearest open favorite with a valid price — the natural reference point
   let nearestPrice: number | false | undefined;
   let nearestDist = 0;
   for (const s of openFavorites) {
     const p = pickPrice(s, prices[s.id], fuel);
     if (typeof p === "number") {
-      if (nearestPrice === undefined || (s.dist ?? 0) < nearestDist) {
+      const d = stationDist(s);
+      if (nearestPrice === undefined || d < nearestDist) {
         nearestPrice = p;
-        nearestDist = s.dist ?? 0;
+        nearestDist = d;
       }
     }
   }
@@ -117,7 +127,7 @@ export default function Favorites({
   for (const s of openFavorites) {
     detourCostMap[s.id] = calcDetourCost(
       pickPrice(s, prices[s.id], fuel),
-      s.dist ?? 0,
+      stationDist(s),
       nearestPrice,
       nearestDist,
       fillVolume,
@@ -126,11 +136,16 @@ export default function Favorites({
     );
   }
 
+  // Enrich favorites with home-computed dist so sorting works correctly
+  const openFavoritesWithDist = openFavorites.map((s) =>
+    homeAddress ? { ...s, dist: stationDist(s) } : s
+  );
+
   // Apply sort
   const sortedFavorites =
     sortBy === "cheapest"
-      ? sortByDetourCost(openFavorites, detourCostMap)
-      : sortStations(openFavorites, sortBy, fuel, prices);
+      ? sortByDetourCost(openFavoritesWithDist, detourCostMap)
+      : sortStations(openFavoritesWithDist, sortBy, fuel, prices);
 
   return (
     <div className="page-layout">
@@ -179,6 +194,12 @@ export default function Favorites({
           </div>
         </div>
 
+        {homeAddress && (
+          <div className="home-address-info">
+            Distances from: <strong>{homeAddress.label?.split(",").slice(0, 2).join(", ") ?? "Home"}</strong>
+          </div>
+        )}
+
         {error && <div className="error-box">Error: {error}</div>}
 
         <div className="stations-list">
@@ -189,6 +210,7 @@ export default function Favorites({
               price={prices[station.id]}
               isFavorite={favoriteIds.has(station.id)}
               selectedFuel={selectedFuel}
+              dist={station.dist}
               fillVolume={fillVolume}
               detourCost={detourCostMap[station.id]}
               isSelected={selectedStationId === station.id}
@@ -208,9 +230,9 @@ export default function Favorites({
         {firstWithCoords && (
           <Map
             ref={mapRef}
-            userLat={firstWithCoords.lat}
-            userLng={firstWithCoords.lng}
-            stations={openFavorites}
+            userLat={homeAddress ? homeAddress.lat : firstWithCoords.lat}
+            userLng={homeAddress ? homeAddress.lng : firstWithCoords.lng}
+            stations={openFavoritesWithDist}
             prices={prices}
             selectedFuel={selectedFuel}
             onMarkerClick={handleMarkerClick}

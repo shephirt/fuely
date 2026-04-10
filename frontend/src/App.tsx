@@ -3,19 +3,21 @@ import { getFavorites, addFavorite, removeFavorite } from "./api";
 import type { FuelType, FavoriteStation, Station } from "./types";
 import type { SortFuel } from "./utils/stationUtils";
 import FuelTypeToggle from "./components/FuelTypeToggle";
+import LocationPicker from "./components/LocationPicker";
 import Nearby from "./pages/Nearby";
 import Favorites from "./pages/Favorites";
 
 type Tab = "nearby" | "favorites";
 
-const FUEL_TYPE_KEY    = "fuely_fuel_type";
-const DEFAULT_TAB_KEY  = "fuely_default_tab";
-const LOCATION_KEY     = "fuely_location";
-const RADIUS_KEY       = "fuely_radius";
-const SORT_FUEL_KEY    = "fuely_sort_fuel";
-const CONSUMPTION_KEY  = "fuely_consumption";
-const FILL_VOLUME_KEY  = "fuely_fill_volume";
+const FUEL_TYPE_KEY     = "fuely_fuel_type";
+const DEFAULT_TAB_KEY   = "fuely_default_tab";
+const LOCATION_KEY      = "fuely_location";
+const RADIUS_KEY        = "fuely_radius";
+const SORT_FUEL_KEY     = "fuely_sort_fuel";
+const CONSUMPTION_KEY   = "fuely_consumption";
+const FILL_VOLUME_KEY   = "fuely_fill_volume";
 const DETOUR_FACTOR_KEY = "fuely_detour_factor";
+const HOME_ADDRESS_KEY  = "fuely_home_address";
 
 export interface LocationState {
   lat: number;
@@ -61,6 +63,14 @@ export default function App() {
   const [detourFactor, setDetourFactor] = useState<number>(() =>
     parseFloat(localStorage.getItem(DETOUR_FACTOR_KEY) ?? "1.3")
   );
+  const [homeAddress, setHomeAddress] = useState<LocationState | null>(() => {
+    try {
+      const raw = localStorage.getItem(HOME_ADDRESS_KEY);
+      return raw ? (JSON.parse(raw) as LocationState) : null;
+    } catch {
+      return null;
+    }
+  });
 
   // ── Persist all preferences ───────────────────────────────────────
   useEffect(() => { localStorage.setItem(FUEL_TYPE_KEY, selectedFuel); }, [selectedFuel]);
@@ -72,6 +82,10 @@ export default function App() {
   useEffect(() => { localStorage.setItem(CONSUMPTION_KEY, String(consumption)); }, [consumption]);
   useEffect(() => { localStorage.setItem(FILL_VOLUME_KEY, String(fillVolume)); }, [fillVolume]);
   useEffect(() => { localStorage.setItem(DETOUR_FACTOR_KEY, String(detourFactor)); }, [detourFactor]);
+  useEffect(() => {
+    if (homeAddress) localStorage.setItem(HOME_ADDRESS_KEY, JSON.stringify(homeAddress));
+    else localStorage.removeItem(HOME_ADDRESS_KEY);
+  }, [homeAddress]);
 
   useEffect(() => {
     getFavorites()
@@ -223,6 +237,26 @@ export default function App() {
                 <option value={1.5}>1.5× — rural</option>
               </select>
             </div>
+
+            <div className="settings-row settings-row--home">
+              <label className="settings-label">Home address</label>
+              <div className="settings-home-picker">
+                <LocationPicker
+                  onLocation={(lat, lng, label) => setHomeAddress({ lat, lng, label })}
+                  currentLocation={homeAddress}
+                  hideGps
+                />
+                {homeAddress && (
+                  <button
+                    className="btn-secondary btn-clear-home"
+                    onClick={() => setHomeAddress(null)}
+                    title="Clear home address"
+                  >
+                    ✕ Clear
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
         )}
 
@@ -276,6 +310,7 @@ export default function App() {
             consumption={consumption}
             fillVolume={fillVolume}
             detourFactor={detourFactor}
+            homeAddress={homeAddress}
           />
         )}
       </main>
