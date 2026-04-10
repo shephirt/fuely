@@ -674,7 +674,8 @@ a:hover { text-decoration: underline; }
   padding: 2px 7px;
   white-space: nowrap;
 }
-.detour-badge.baseline  { background: rgba(62, 207, 110, 0.15); color: var(--color-open); }
+.detour-badge.nearest   { background: rgba(150, 150, 150, 0.15); color: #888; }
+.detour-badge.baseline  { background: rgba(62, 207, 110, 0.15);  color: var(--color-open); }
 .detour-badge.warning   { background: rgba(245, 197, 24, 0.15);  color: var(--color-gold); }
 .detour-badge.expensive { background: rgba(224, 92, 92, 0.15);   color: var(--color-closed); }
 

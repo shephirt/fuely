@@ -51,7 +51,7 @@ function PriceBadge({
 function DetourBadge({ cost }: { cost: DetourResult }) {
   if (cost.kind === "nearest") {
     return (
-      <span className="detour-badge baseline">
+      <span className="detour-badge nearest">
         Nearest station · reference point
       </span>
     );
