@@ -16,6 +16,10 @@ RUN --mount=type=cache,target=/root/.npm \
 # ── Stage 1: Build frontend ───────────────────────────────────────────
 FROM node:25-alpine AS frontend-builder
 
+# Injected by CI from the git tag; falls back to "dev" for local builds
+ARG VERSION=dev
+ENV VERSION=${VERSION}
+
 WORKDIR /app
 
 COPY frontend/package.json ./
