@@ -1,0 +1,18 @@
+# Development — builds the image locally from source.
+# Usage:
+#   cp .env.example .env   # fill in TANKERKOENIG_API_KEY
+#   docker compose -f docker-compose.dev.yml up --build
+
+services:
+  fuely:
+    build: .
+    ports:
+      - "127.0.0.1:8080:3000"
+    env_file:
+      - .env
+    volumes:
+      - fuely-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  fuely-data:

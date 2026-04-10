@@ -1,0 +1,655 @@
+/* ── Reset & base ─────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --color-bg:           #0f1117;
+  --color-surface:      #1a1d27;
+  --color-surface-2:    #22263a;
+  --color-border:       #2e3350;
+  --color-accent:       #4a90e2;
+  --color-accent-hover: #357abd;
+  --color-text:         #e8eaf0;
+  --color-text-muted:   #8891aa;
+  --color-open:         #3ecf6e;
+  --color-closed:       #e05c5c;
+  --color-gold:         #f5c518;
+  --radius:             10px;
+  --shadow:             0 2px 12px rgba(0, 0, 0, 0.4);
+  --max-width:          1200px;
+  --content-pad:        16px;
+
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 15px;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  /* Prevent the page itself from scrolling */
+  overflow: hidden;
+  height: 100dvh;
+}
+
+a {
+  color: var(--color-accent);
+  text-decoration: none;
+}
+a:hover { text-decoration: underline; }
+
+/* ── App shell: fixed chrome, scrollable middle ───────────────────── */
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;       /* exactly the viewport */
+  overflow: hidden;
+}
+
+/* ── Header (sticky, never scrolls away) ──────────────────────────── */
+.app-header {
+  flex-shrink: 0;       /* never shrink */
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  z-index: 1000;
+}
+
+.app-header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 10px var(--content-pad);
+}
+
+.app-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.app-logo-icon { font-size: 22px; }
+.app-logo-text {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  color: var(--color-text);
+}
+
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ── Settings panel ───────────────────────────────────────────────── */
+.settings-panel {
+  border-top: 1px solid var(--color-border);
+  padding: 10px var(--content-pad);
+  max-width: var(--max-width);
+  margin: 0 auto;
+  width: 100%;
+}
+.settings-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.settings-label {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  font-weight: 500;
+  min-width: 90px;
+}
+.settings-toggle {
+  display: flex;
+  gap: 4px;
+  background: var(--color-surface-2);
+  border-radius: 8px;
+  padding: 3px;
+}
+
+/* ── Tab nav (inside header) ──────────────────────────────────────── */
+.tab-nav {
+  display: flex;
+  border-top: 1px solid var(--color-border);
+  max-width: var(--max-width);
+  /* allow full-width tabs */
+  width: 100%;
+  margin: 0 auto;
+}
+.tab-btn {
+  flex: 1;
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: color 0.15s, border-color 0.15s;
+  max-width: 200px;
+}
+.tab-btn:hover { color: var(--color-text); }
+.tab-btn.active {
+  color: var(--color-accent);
+  border-bottom-color: var(--color-accent);
+}
+.tab-count {
+  background: var(--color-accent);
+  color: #fff;
+  border-radius: 10px;
+  padding: 1px 7px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* ── Fuel type toggle ─────────────────────────────────────────────── */
+.fuel-toggle {
+  display: flex;
+  gap: 4px;
+  background: var(--color-surface-2);
+  border-radius: 8px;
+  padding: 3px;
+}
+.fuel-btn {
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 5px 11px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  transition: background 0.15s, color 0.15s;
+}
+.fuel-btn:hover { background: var(--color-border); color: var(--color-text); }
+.fuel-btn.active { background: var(--color-accent); color: #fff; }
+
+/* ── Main scrollable area ─────────────────────────────────────────── */
+.app-main {
+  flex: 1;              /* takes remaining height between header and footer */
+  min-height: 0;        /* allow flex child to shrink below content size */
+  overflow-y: auto;     /* only this scrolls */
+  padding: var(--content-pad);
+  /* inner content centred */
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.app-main > * {
+  max-width: var(--max-width);
+  width: 100%;
+  margin: 0 auto;
+  flex-shrink: 0;       /* prevent flex children from collapsing */
+}
+
+/* ── Footer (sticky, never scrolls away) ──────────────────────────── */
+.app-footer {
+  flex-shrink: 0;
+  text-align: center;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  padding: 8px var(--content-pad);
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+/* ── Location picker ──────────────────────────────────────────────── */
+.location-picker {
+  flex: 1;
+  min-width: 200px;
+  position: relative;
+}
+.location-picker-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.btn-gps { white-space: nowrap; flex-shrink: 0; }
+.active-gps { border-color: var(--color-accent) !important; color: var(--color-accent) !important; }
+
+.location-search-wrap {
+  position: relative;
+  flex: 1;
+}
+.location-input {
+  width: 100%;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  color: var(--color-text);
+  font-size: 14px;
+  padding: 6px 30px 6px 11px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.location-input:focus { border-color: var(--color-accent); }
+.location-input::placeholder { color: var(--color-text-muted); }
+
+.location-spinner {
+  position: absolute;
+  right: 9px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-text-muted);
+  animation: spin 1s linear infinite;
+  font-size: 15px;
+}
+@keyframes spin { to { transform: translateY(-50%) rotate(360deg); } }
+
+.location-error {
+  font-size: 12px;
+  color: var(--color-closed);
+  margin-top: 4px;
+  padding: 0 4px;
+}
+.location-results {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  list-style: none;
+  z-index: 2000;
+  overflow: hidden;
+}
+.location-result-btn {
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: var(--color-text);
+  cursor: pointer;
+  font-size: 13px;
+  padding: 9px 13px;
+  text-align: left;
+  line-height: 1.4;
+  transition: background 0.1s;
+}
+.location-result-btn:hover { background: var(--color-surface-2); }
+
+/* ── Radius selector ──────────────────────────────────────────────── */
+.radius-selector {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 14px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.radius-selector select {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  color: var(--color-text);
+  font-size: 14px;
+  padding: 5px 9px;
+  cursor: pointer;
+}
+
+/* ── Buttons ──────────────────────────────────────────────────────── */
+.btn-primary {
+  background: var(--color-accent);
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 8px 16px;
+  transition: background 0.15s;
+}
+.btn-primary:hover { background: var(--color-accent-hover); }
+
+.btn-secondary {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  color: var(--color-text);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 6px 11px;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+.btn-secondary:hover:not(:disabled) { background: var(--color-border); }
+.btn-secondary:disabled { opacity: 0.5; cursor: default; }
+
+.btn-icon {
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font-size: 17px;
+  padding: 5px 9px;
+  transition: color 0.15s, background 0.15s;
+  line-height: 1;
+}
+.btn-icon:hover { color: var(--color-text); background: var(--color-surface-2); }
+
+/* ── Map ──────────────────────────────────────────────────────────── */
+.leaflet-map {
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  /* default mobile height */
+  height: 280px;
+  width: 100%;
+}
+
+/* Empty map slot when no location is set yet (Nearby before GPS/search) */
+.map-placeholder {
+  height: 280px;
+  border-radius: var(--radius);
+  border: 1px dashed var(--color-border);
+  background: var(--color-surface);
+}
+
+/* ── Unified page layout (Nearby + Favorites) ─────────────────────── */
+.page-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+/* Left column: top controls (optional) + toolbar + cards */
+.page-left {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Top row — location picker + radius (Nearby only) */
+.page-top-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* ── Toolbar (refresh bar, same in both tabs) ─────────────────────── */
+.page-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+/* ── Favorites toolbar (legacy alias kept for safety) ─────────────── */
+.favorites-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.refresh-info {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+/* ── Stations list ────────────────────────────────────────────────── */
+.stations-list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  /* ensure it never forces extra scroll space */
+  align-content: start;
+}
+
+/* ── Station card ─────────────────────────────────────────────────── */
+.station-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 13px 15px;
+  box-shadow: var(--shadow);
+  transition: border-color 0.15s;
+}
+.station-card.clickable { cursor: pointer; }
+.station-card.clickable:hover { border-color: var(--color-accent); }
+.station-card.closed { opacity: 0.65; }
+
+.station-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 5px;
+}
+.station-name-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.station-brand {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--color-accent);
+}
+.station-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fav-btn {
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font-size: 21px;
+  line-height: 1;
+  padding: 0 2px;
+  flex-shrink: 0;
+  transition: transform 0.1s, color 0.15s;
+}
+.fav-btn:hover { transform: scale(1.2); color: var(--color-gold); }
+.fav-btn.active { color: var(--color-gold); }
+
+.station-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 9px;
+}
+.station-address {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.station-dist {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+  background: var(--color-surface-2);
+  border-radius: 5px;
+  padding: 2px 6px;
+}
+
+.station-prices {
+  display: flex;
+  gap: 7px;
+  margin-bottom: 9px;
+}
+.price-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: 7px;
+  padding: 5px 10px;
+  flex: 1;
+  transition: border-color 0.15s, background 0.15s;
+}
+.price-badge.highlighted {
+  border-color: var(--color-accent);
+  background: rgba(74, 144, 226, 0.1);
+}
+.price-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  margin-bottom: 2px;
+}
+.price-value {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.station-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.status-badge {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  border-radius: 5px;
+  padding: 2px 7px;
+}
+.status-badge.open  { background: rgba(62, 207, 110, 0.15); color: var(--color-open); }
+.status-badge.closed{ background: rgba(224, 92, 92, 0.15);  color: var(--color-closed); }
+.show-on-map-hint {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.station-card.clickable:hover .show-on-map-hint { opacity: 1; }
+
+/* ── Feedback boxes ───────────────────────────────────────────────── */
+.loading-box,
+.error-box,
+.empty-box {
+  border-radius: var(--radius);
+  padding: 18px;
+  text-align: center;
+  font-size: 14px;
+}
+.loading-box {
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
+}
+.error-box {
+  background: rgba(224, 92, 92, 0.1);
+  border: 1px solid rgba(224, 92, 92, 0.4);
+  color: var(--color-closed);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+}
+.empty-box {
+  background: var(--color-surface);
+  border: 1px dashed var(--color-border);
+  color: var(--color-text-muted);
+  line-height: 1.7;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════════════════════════════════════ */
+
+/* ── Tablet ≥ 640px ───────────────────────────────────────────────── */
+@media (min-width: 640px) {
+  :root { --content-pad: 20px; }
+
+  .leaflet-map { height: 340px; }
+  .map-placeholder { height: 340px; }
+
+  /* Equal 2-column grid for station cards */
+  .stations-list { grid-template-columns: 1fr 1fr; }
+}
+
+/* ── Desktop ≥ 1024px ─────────────────────────────────────────────── */
+@media (min-width: 1024px) {
+  :root { --content-pad: 28px; }
+
+  /*
+   * Two-column grid: .page-left (content) | .page-map (sticky map)
+   * Both are direct children → no row-spanning tricks needed.
+   * align-items: start prevents either column from stretching to
+   * match the other's height.
+   */
+  .page-layout {
+    display: grid;
+    grid-template-columns: 1fr 400px;
+    gap: 16px;
+    align-items: start;
+  }
+
+  /* Left column: flex column so top-row / toolbar / cards stack tightly */
+  .page-left {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    align-self: start;   /* never stretch to map height */
+    min-width: 0;
+  }
+
+  /* Map column: sticky so it stays in view while the list scrolls */
+  .page-map {
+    align-self: start;
+    position: sticky;
+    top: 0;
+  }
+
+  .page-map .leaflet-map,
+  .page-map .map-placeholder {
+    height: calc(100dvh - 220px) !important;
+    min-height: 300px;
+    max-height: 900px;
+  }
+
+  /* Single-column cards on desktop (tablet uses 2-col) */
+  .page-left .stations-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Wide desktop ≥ 1400px ────────────────────────────────────────── */
+@media (min-width: 1400px) {
+  .page-layout {
+    grid-template-columns: 1fr 480px;
+  }
+}
