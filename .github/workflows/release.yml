@@ -4,7 +4,12 @@ on:
   push:
     tags:
       - "v*.*.*"
-  workflow_dispatch: 
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version tag to (re-)publish, e.g. v0.1.0"
+        required: true
+        type: string
 
 permissions:
   contents: write        # create GitHub Releases
@@ -17,14 +22,20 @@ jobs:
     steps:
       # ── 1. Checkout ────────────────────────────────────────────────
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       # ── 2. Derive metadata ─────────────────────────────────────────
+      # On tag push:        VERSION = the git tag (e.g. v0.1.0)
+      # On manual dispatch: VERSION = the user-supplied input
       - name: Extract metadata
         id: meta
         run: |
-          VERSION="${GITHUB_REF_NAME}"          # e.g. v0.1.0
-          VERSION_PLAIN="${VERSION#v}"           # e.g. 0.1.0
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ inputs.version }}"
+          else
+            VERSION="${GITHUB_REF_NAME}"
+          fi
+          VERSION_PLAIN="${VERSION#v}"
           GIT_REVISION="${GITHUB_SHA::7}"
           BUILD_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           echo "version=${VERSION}"             >> "$GITHUB_OUTPUT"
@@ -32,13 +43,13 @@ jobs:
           echo "git_revision=${GIT_REVISION}"   >> "$GITHUB_OUTPUT"
           echo "build_date=${BUILD_DATE}"       >> "$GITHUB_OUTPUT"
 
-      # ── 3. Set up Docker Buildx (needed for cache + multi-platform) ─
+      # ── 3. Set up Docker Buildx ────────────────────────────────────
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v4
+        uses: docker/setup-buildx-action@v3
 
       # ── 4. Log in to GitHub Container Registry ─────────────────────
       - name: Log in to ghcr.io
-        uses: docker/login-action@v4
+        uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -46,7 +57,7 @@ jobs:
 
       # ── 5. Build and push image ────────────────────────────────────
       - name: Build and push Docker image
-        uses: docker/build-push-action@v7
+        uses: docker/build-push-action@v6
         with:
           context: .
           push: true
@@ -57,12 +68,13 @@ jobs:
             VERSION=${{ steps.meta.outputs.version_plain }}
             GIT_REVISION=${{ steps.meta.outputs.git_revision }}
             BUILD_DATE=${{ steps.meta.outputs.build_date }}
-          # Reuse GitHub Actions cache to speed up subsequent builds
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # ── 6. Create GitHub Release with auto-generated notes ─────────
+      # ── 6. Create GitHub Release (tag-push only) ───────────────────
+      # Skipped on manual workflow_dispatch to avoid duplicate release notes.
       - name: Create GitHub Release
+        if: github.event_name == 'push'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.meta.outputs.version }}

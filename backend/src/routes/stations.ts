@@ -78,7 +78,7 @@ router.get("/prices", async (req: Request, res: Response) => {
 
 // GET /api/stations/:id
 router.get("/:id", async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const id = String(req.params.id);
 
   const uuidRegex =
     /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

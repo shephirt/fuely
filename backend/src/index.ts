@@ -21,7 +21,7 @@ const publicDir = path.join(__dirname, "..", "public");
 app.use(express.static(publicDir));
 
 // SPA fallback — serve index.html for any non-API route
-app.get("*", (_req, res) => {
+app.get("/{*path}", (_req, res) => {
   res.sendFile(path.join(publicDir, "index.html"));
 });
 
