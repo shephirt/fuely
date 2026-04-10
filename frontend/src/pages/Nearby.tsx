@@ -97,19 +97,16 @@ export default function Nearby({
   }
 
   // Pre-compute detour costs for all open stations (needed for both display and cheapest sort)
-  const detourCostMap: Map<string, number | "baseline" | undefined> = new Map();
+  const detourCostMap: Record<string, number | "baseline" | undefined> = {};
   for (const s of openStations) {
-    detourCostMap.set(
-      s.id,
-      calcDetourCost(
-        pickPrice(s, undefined, fuel),
-        baselinePrice,
-        s.dist ?? 0,
-        baselineDist,
-        fillVolume,
-        consumption,
-        detourFactor
-      )
+    detourCostMap[s.id] = calcDetourCost(
+      pickPrice(s, undefined, fuel),
+      baselinePrice,
+      s.dist ?? 0,
+      baselineDist,
+      fillVolume,
+      consumption,
+      detourFactor
     );
   }
 
@@ -192,7 +189,7 @@ export default function Nearby({
               selectedFuel={selectedFuel}
               isOpen={station.isOpen}
               dist={station.dist}
-              detourCost={detourCostMap.get(station.id)}
+              detourCost={detourCostMap[station.id]}
               isSelected={selectedStationId === station.id}
               cardRef={(el) => {
                 if (el) cardRefs.current[station.id] = el;

@@ -64,11 +64,11 @@ export function sortStations<T extends Station | FavoriteStation>(
  *  "baseline" counts as 0. Stations without a cost (undefined) sink to the bottom. */
 export function sortByDetourCost<T extends Station | FavoriteStation>(
   stations: T[],
-  detourCosts: Map<string, number | "baseline" | undefined>
+  detourCosts: Record<string, number | "baseline" | undefined>
 ): T[] {
   return [...stations].sort((a, b) => {
-    const ca = detourCosts.get(a.id);
-    const cb = detourCosts.get(b.id);
+    const ca = detourCosts[a.id];
+    const cb = detourCosts[b.id];
     const aVal = ca === "baseline" ? 0 : (typeof ca === "number" ? ca : undefined);
     const bVal = cb === "baseline" ? 0 : (typeof cb === "number" ? cb : undefined);
     if (aVal === undefined && bVal === undefined) return 0;

@@ -113,19 +113,16 @@ export default function Favorites({
   }
 
   // Pre-compute detour costs for all open favorites (needed for display and cheapest sort)
-  const detourCostMap: Map<string, number | "baseline" | undefined> = new Map();
+  const detourCostMap: Record<string, number | "baseline" | undefined> = {};
   for (const s of openFavorites) {
-    detourCostMap.set(
-      s.id,
-      calcDetourCost(
-        pickPrice(s, prices[s.id], fuel),
-        baselinePrice,
-        s.dist ?? 0,
-        baselineDist,
-        fillVolume,
-        consumption,
-        detourFactor
-      )
+    detourCostMap[s.id] = calcDetourCost(
+      pickPrice(s, prices[s.id], fuel),
+      baselinePrice,
+      s.dist ?? 0,
+      baselineDist,
+      fillVolume,
+      consumption,
+      detourFactor
     );
   }
 
@@ -192,7 +189,7 @@ export default function Favorites({
               price={prices[station.id]}
               isFavorite={favoriteIds.has(station.id)}
               selectedFuel={selectedFuel}
-              detourCost={detourCostMap.get(station.id)}
+              detourCost={detourCostMap[station.id]}
               isSelected={selectedStationId === station.id}
               cardRef={(el) => {
                 if (el) cardRefs.current[station.id] = el;
