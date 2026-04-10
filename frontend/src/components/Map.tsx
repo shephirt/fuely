@@ -144,7 +144,7 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
       )}
 
       {/* Station markers */}
-      {stations.map((station) => {
+      {stations.filter((s) => s.lat && s.lng).map((station) => {
         const price = prices?.[station.id];
         const isOpen =
           price

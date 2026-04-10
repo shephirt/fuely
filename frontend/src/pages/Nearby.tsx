@@ -81,7 +81,9 @@ export default function Nearby({
 
   const favoriteIds = new Set(favorites.map((f) => f.id));
   const fuel = effectiveSortFuel(selectedFuel, sortFuel);
-  const openStations = stations.filter((s) => s.isOpen);
+  // Filter out stations with missing/zero coordinates — Leaflet crashes on those
+  const validStations = stations.filter((s) => s.lat && s.lng);
+  const openStations = validStations.filter((s) => s.isOpen);
 
   // Nearest open station with a valid price — the natural reference point
   let nearestPrice: number | false | undefined;
