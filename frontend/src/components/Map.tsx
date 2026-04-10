@@ -32,8 +32,9 @@ function makePricePin(label: string, isOpen: boolean): L.DivIcon {
   return L.divIcon({
     className: "",
     html: `<div class="map-price-pin${isOpen ? "" : " closed"}">${label}</div>`,
-    iconAnchor: [28, 28],
-    popupAnchor: [0, -32],
+    iconSize: [0, 0],       // let the pill size itself via CSS
+    iconAnchor: [0, 0],     // top-left corner sits at the lat/lng point
+    popupAnchor: [28, -8],  // open popup above-right of the pin centre
   });
 }
 
