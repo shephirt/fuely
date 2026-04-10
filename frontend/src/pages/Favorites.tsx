@@ -113,7 +113,7 @@ export default function Favorites({
   }
 
   // Pre-compute detour costs for all open favorites (needed for display and cheapest sort)
-  const detourCostMap = new Map<string, number | "baseline" | undefined>();
+  const detourCostMap: Map<string, number | "baseline" | undefined> = new Map();
   for (const s of openFavorites) {
     detourCostMap.set(
       s.id,

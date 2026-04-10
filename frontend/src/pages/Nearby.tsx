@@ -97,7 +97,7 @@ export default function Nearby({
   }
 
   // Pre-compute detour costs for all open stations (needed for both display and cheapest sort)
-  const detourCostMap = new Map<string, number | "baseline" | undefined>();
+  const detourCostMap: Map<string, number | "baseline" | undefined> = new Map();
   for (const s of openStations) {
     detourCostMap.set(
       s.id,
