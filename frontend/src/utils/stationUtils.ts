@@ -80,15 +80,21 @@ export function sortByDetourCost<T extends Station | FavoriteStation>(
 
 /** Compute the net saving (in €) of fuelling at this station vs the baseline.
  *
- *  Model:
- *   - The user drives a round-trip detour to reach this station instead of the
- *     baseline: extra km = (stationDist − baselineDist) × detourFactor × 2
- *   - Detour fuel cost = extraKm × (consumption / 100) × baselinePrice
- *   - Price saving     = (baselinePrice − stationPrice) × fillVolume
- *   - Net saving       = price saving − detour fuel cost
+ *  Steps:
+ *   1. Fill cost at baseline = baselinePrice × fillVolume
+ *      Fill cost here        = stationPrice  × fillVolume
+ *      Price difference      = (baselinePrice − stationPrice) × fillVolume
+ *
+ *   2. Detour cost = extra round-trip km × (consumption / 100) × stationPrice
+ *      (burned at this station's price because you just filled up here)
+ *      extra km = (stationDist − baselineDist) × detourFactor × 2
+ *
+ *   3. Net saving = price difference − detour cost
+ *      Positive → detour costs less than the saving → worth it
+ *      Negative → detour costs more than the saving → not worth it
  *
  *  Returns:
- *   "baseline"  — this IS the cheapest station (no detour needed)
+ *   "baseline"  — this IS the cheapest/reference station
  *   number      — net saving in €; positive = save money, negative = costs more
  *   undefined   — cannot calculate (missing price or invalid settings)
  */
@@ -110,17 +116,15 @@ export function calcDetourCost(
     return undefined;
   }
 
-  // Extra km driven for the round-trip detour
+  // Step 1: how much cheaper is it to fill up here vs the baseline?
+  const priceDifference = (baselinePrice - stationPrice) * fillVolume;
+
+  // Step 2: cost of driving the extra round-trip km, burned at this station's price
   const extraKm = Math.max(0, (stationDist - baselineDist) * detourFactor * 2);
+  const detourFuelCost = extraKm * (consumption / 100) * stationPrice;
 
-  // Cost of the extra fuel burned driving the detour
-  const detourFuelCost = extraKm * (consumption / 100) * baselinePrice;
-
-  // How much cheaper (or more expensive) it is to fill up here vs baseline
-  const priceSaving = (baselinePrice - stationPrice) * fillVolume;
-
-  // Positive = net saving, negative = net extra cost
-  const netSaving = priceSaving - detourFuelCost;
+  // Step 3: is the saving greater than the detour cost?
+  const netSaving = priceDifference - detourFuelCost;
 
   // This IS the baseline station
   if (stationPrice === baselinePrice && extraKm === 0) return "baseline";
