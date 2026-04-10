@@ -1,5 +1,3 @@
-# syntax=docker/dockerfile:1
-
 # ── Stage 0: Generate lock files ─────────────────────────────────────
 FROM node:25-alpine AS lockfile-gen
 
