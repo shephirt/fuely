@@ -47,8 +47,7 @@ export function sortStations<T extends Station | FavoriteStation>(
   if (sortBy === "distance") {
     return [...stations].sort((a, b) => (a.dist ?? 0) - (b.dist ?? 0));
   }
-  // "cheapest": always sort by the minimum across all three fuels
-  const resolveFuel: SortFuel = sortBy === "cheapest" ? "cheapest" : fuel;
+  const resolveFuel: SortFuel = fuel;
   return [...stations].sort((a, b) => {
     const pa = pickPrice(a, prices?.[a.id], resolveFuel);
     const pb = pickPrice(b, prices?.[b.id], resolveFuel);
@@ -58,6 +57,24 @@ export function sortStations<T extends Station | FavoriteStation>(
     if (!aValid) return 1;
     if (!bValid) return -1;
     return (pa as number) - (pb as number);
+  });
+}
+
+/** Sort stations by their pre-computed detour cost (ascending).
+ *  "baseline" counts as 0. Stations without a cost (undefined) sink to the bottom. */
+export function sortByDetourCost<T extends Station | FavoriteStation>(
+  stations: T[],
+  detourCosts: Map<string, number | "baseline" | undefined>
+): T[] {
+  return [...stations].sort((a, b) => {
+    const ca = detourCosts.get(a.id);
+    const cb = detourCosts.get(b.id);
+    const aVal = ca === "baseline" ? 0 : (typeof ca === "number" ? ca : undefined);
+    const bVal = cb === "baseline" ? 0 : (typeof cb === "number" ? cb : undefined);
+    if (aVal === undefined && bVal === undefined) return 0;
+    if (aVal === undefined) return 1;
+    if (bVal === undefined) return -1;
+    return aVal - bVal;
   });
 }
 

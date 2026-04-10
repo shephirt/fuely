@@ -3,7 +3,7 @@ import { getNearby } from "../api";
 import type { Station, FuelType, FavoriteStation } from "../types";
 import type { LocationState } from "../App";
 import type { SortFuel, SortBy } from "../utils/stationUtils";
-import { effectiveSortFuel, sortStations, pickPrice, calcDetourCost } from "../utils/stationUtils";
+import { effectiveSortFuel, sortStations, sortByDetourCost, pickPrice, calcDetourCost } from "../utils/stationUtils";
 import StationCard from "../components/StationCard";
 import Map, { type MapHandle } from "../components/Map";
 import LocationPicker from "../components/LocationPicker";
@@ -82,7 +82,6 @@ export default function Nearby({
   const favoriteIds = new Set(favorites.map((f) => f.id));
   const fuel = effectiveSortFuel(selectedFuel, sortFuel);
   const openStations = stations.filter((s) => s.isOpen);
-  const sortedStations = sortStations(openStations, sortBy, fuel);
 
   // Baseline: station with the lowest price for the effective fuel, independent of sort order
   let baselinePrice: number | false | undefined;
@@ -96,6 +95,29 @@ export default function Nearby({
       }
     }
   }
+
+  // Pre-compute detour costs for all open stations (needed for both display and cheapest sort)
+  const detourCostMap = new Map<string, number | "baseline" | undefined>();
+  for (const s of openStations) {
+    detourCostMap.set(
+      s.id,
+      calcDetourCost(
+        pickPrice(s, undefined, fuel),
+        baselinePrice,
+        s.dist ?? 0,
+        baselineDist,
+        fillVolume,
+        consumption,
+        detourFactor
+      )
+    );
+  }
+
+  // Apply sort
+  const sortedStations =
+    sortBy === "cheapest"
+      ? sortByDetourCost(openStations, detourCostMap)
+      : sortStations(openStations, sortBy, fuel);
 
   return (
     <div className="page-layout">
@@ -133,7 +155,7 @@ export default function Nearby({
               <button
                 className={`sort-btn${sortBy === "cheapest" ? " active" : ""}`}
                 onClick={() => setSortBy("cheapest")}
-                title="Sort by cheapest fuel overall"
+                title="Sort by net cost including detour (cheapest overall)"
               >
                 Cheapest
               </button>
@@ -162,36 +184,24 @@ export default function Nearby({
         )}
 
         <div className="stations-list">
-          {sortedStations.map((station) => {
-            const stationPrice = pickPrice(station, undefined, fuel);
-            const detourCost = calcDetourCost(
-              stationPrice,
-              baselinePrice,
-              station.dist ?? 0,
-              baselineDist,
-              fillVolume,
-              consumption,
-              detourFactor
-            );
-            return (
-              <StationCard
-                key={station.id}
-                station={station}
-                isFavorite={favoriteIds.has(station.id)}
-                selectedFuel={selectedFuel}
-                isOpen={station.isOpen}
-                dist={station.dist}
-                detourCost={detourCost}
-                isSelected={selectedStationId === station.id}
-                cardRef={(el) => {
-                  if (el) cardRefs.current[station.id] = el;
-                  else delete cardRefs.current[station.id];
-                }}
-                onToggleFavorite={onToggleFavorite}
-                onSelect={handleSelectStation}
-              />
-            );
-          })}
+          {sortedStations.map((station) => (
+            <StationCard
+              key={station.id}
+              station={station}
+              isFavorite={favoriteIds.has(station.id)}
+              selectedFuel={selectedFuel}
+              isOpen={station.isOpen}
+              dist={station.dist}
+              detourCost={detourCostMap.get(station.id)}
+              isSelected={selectedStationId === station.id}
+              cardRef={(el) => {
+                if (el) cardRefs.current[station.id] = el;
+                else delete cardRefs.current[station.id];
+              }}
+              onToggleFavorite={onToggleFavorite}
+              onSelect={handleSelectStation}
+            />
+          ))}
         </div>
       </div>
 

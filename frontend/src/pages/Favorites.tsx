@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { getPrices } from "../api";
 import type { FavoriteStation, FuelType, PriceMap } from "../types";
 import type { SortFuel, SortBy } from "../utils/stationUtils";
-import { effectiveSortFuel, sortStations, pickPrice, calcDetourCost } from "../utils/stationUtils";
+import { effectiveSortFuel, sortStations, sortByDetourCost, pickPrice, calcDetourCost } from "../utils/stationUtils";
 import StationCard from "../components/StationCard";
 import Map, { type MapHandle } from "../components/Map";
 
@@ -98,7 +98,6 @@ export default function Favorites({
   const openFavorites = favorites.filter(
     (f) => !prices[f.id] || prices[f.id].status === "open"
   );
-  const sortedFavorites = sortStations(openFavorites, sortBy, fuel, prices);
 
   // Baseline: station with the lowest price for the effective fuel, independent of sort order
   let baselinePrice: number | false | undefined;
@@ -112,6 +111,29 @@ export default function Favorites({
       }
     }
   }
+
+  // Pre-compute detour costs for all open favorites (needed for display and cheapest sort)
+  const detourCostMap = new Map<string, number | "baseline" | undefined>();
+  for (const s of openFavorites) {
+    detourCostMap.set(
+      s.id,
+      calcDetourCost(
+        pickPrice(s, prices[s.id], fuel),
+        baselinePrice,
+        s.dist ?? 0,
+        baselineDist,
+        fillVolume,
+        consumption,
+        detourFactor
+      )
+    );
+  }
+
+  // Apply sort
+  const sortedFavorites =
+    sortBy === "cheapest"
+      ? sortByDetourCost(openFavorites, detourCostMap)
+      : sortStations(openFavorites, sortBy, fuel, prices);
 
   return (
     <div className="page-layout">
@@ -144,7 +166,7 @@ export default function Favorites({
               <button
                 className={`sort-btn${sortBy === "cheapest" ? " active" : ""}`}
                 onClick={() => setSortBy("cheapest")}
-                title="Sort by cheapest fuel overall"
+                title="Sort by net cost including detour (cheapest overall)"
               >
                 Cheapest
               </button>
@@ -163,35 +185,23 @@ export default function Favorites({
         {error && <div className="error-box">Error: {error}</div>}
 
         <div className="stations-list">
-          {sortedFavorites.map((station) => {
-            const stationPrice = pickPrice(station, prices[station.id], fuel);
-            const detourCost = calcDetourCost(
-              stationPrice,
-              baselinePrice,
-              station.dist ?? 0,
-              baselineDist,
-              fillVolume,
-              consumption,
-              detourFactor
-            );
-            return (
-              <StationCard
-                key={station.id}
-                station={station}
-                price={prices[station.id]}
-                isFavorite={favoriteIds.has(station.id)}
-                selectedFuel={selectedFuel}
-                detourCost={detourCost}
-                isSelected={selectedStationId === station.id}
-                cardRef={(el) => {
-                  if (el) cardRefs.current[station.id] = el;
-                  else delete cardRefs.current[station.id];
-                }}
-                onToggleFavorite={onToggleFavorite}
-                onSelect={handleSelectStation}
-              />
-            );
-          })}
+          {sortedFavorites.map((station) => (
+            <StationCard
+              key={station.id}
+              station={station}
+              price={prices[station.id]}
+              isFavorite={favoriteIds.has(station.id)}
+              selectedFuel={selectedFuel}
+              detourCost={detourCostMap.get(station.id)}
+              isSelected={selectedStationId === station.id}
+              cardRef={(el) => {
+                if (el) cardRefs.current[station.id] = el;
+                else delete cardRefs.current[station.id];
+              }}
+              onToggleFavorite={onToggleFavorite}
+              onSelect={handleSelectStation}
+            />
+          ))}
         </div>
       </div>
 
