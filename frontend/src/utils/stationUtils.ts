@@ -60,7 +60,7 @@ export function sortStations<T extends Station | FavoriteStation>(
   });
 }
 
-/** Sort stations by their pre-computed detour cost (ascending).
+/** Sort stations by their pre-computed net saving (descending — highest saving first).
  *  "baseline" counts as 0. Stations without a cost (undefined) sink to the bottom. */
 export function sortByDetourCost<T extends Station | FavoriteStation>(
   stations: T[],
@@ -74,7 +74,7 @@ export function sortByDetourCost<T extends Station | FavoriteStation>(
     if (aVal === undefined && bVal === undefined) return 0;
     if (aVal === undefined) return 1;
     if (bVal === undefined) return -1;
-    return aVal - bVal;
+    return bVal - aVal; // descending: highest saving first
   });
 }
 
