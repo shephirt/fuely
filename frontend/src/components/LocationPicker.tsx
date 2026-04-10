@@ -6,9 +6,10 @@ import type { LocationState } from "../App";
 interface LocationPickerProps {
   onLocation: (lat: number, lng: number, label?: string) => void;
   currentLocation: LocationState | null;
+  hideGps?: boolean;
 }
 
-export default function LocationPicker({ onLocation, currentLocation }: LocationPickerProps) {
+export default function LocationPicker({ onLocation, currentLocation, hideGps }: LocationPickerProps) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<GeocodedPlace[]>([]);
   const [searching, setSearching] = useState(false);
@@ -82,14 +83,16 @@ export default function LocationPicker({ onLocation, currentLocation }: Location
   return (
     <div className="location-picker">
       <div className="location-picker-row">
-        <button
-          className={`btn-secondary btn-gps${currentLocation?.label === "GPS location" ? " active-gps" : ""}`}
-          onClick={handleGps}
-          disabled={gpsLoading}
-          title="Use GPS location"
-        >
-          {gpsLoading ? "…" : gpsLabel}
-        </button>
+        {!hideGps && (
+          <button
+            className={`btn-secondary btn-gps${currentLocation?.label === "GPS location" ? " active-gps" : ""}`}
+            onClick={handleGps}
+            disabled={gpsLoading}
+            title="Use GPS location"
+          >
+            {gpsLoading ? "…" : gpsLabel}
+          </button>
+        )}
         <div className="location-search-wrap">
           <input
             className="location-input"
