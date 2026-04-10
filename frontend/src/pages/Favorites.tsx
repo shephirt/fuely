@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { getPrices } from "../api";
 import type { FavoriteStation, FuelType, PriceMap } from "../types";
 import type { SortFuel, SortBy } from "../utils/stationUtils";
-import { effectiveSortFuel, sortStations } from "../utils/stationUtils";
+import { effectiveSortFuel, sortStations, pickPrice, calcDetourCost } from "../utils/stationUtils";
 import StationCard from "../components/StationCard";
 import Map, { type MapHandle } from "../components/Map";
 
@@ -21,6 +21,9 @@ export default function Favorites({
   selectedFuel,
   onToggleFavorite,
   sortFuel,
+  consumption,
+  fillVolume,
+  detourFactor,
 }: FavoritesProps) {
   const [prices, setPrices] = useState<PriceMap>({});
   const [loading, setLoading] = useState(false);
@@ -81,6 +84,15 @@ export default function Favorites({
   const fuel = effectiveSortFuel(selectedFuel, sortFuel);
   const sortedFavorites = sortStations(favorites, sortBy, fuel, prices);
 
+  // Baseline: first station in sorted list with a valid price
+  const baselineStation = sortedFavorites.find(
+    (s) => typeof pickPrice(s, prices[s.id], fuel) === "number"
+  );
+  const baselinePrice = baselineStation
+    ? pickPrice(baselineStation, prices[baselineStation.id], fuel)
+    : undefined;
+  const baselineDist = baselineStation?.dist ?? 0;
+
   return (
     <div className="page-layout">
       {/* Left column: toolbar + cards */}
@@ -124,17 +136,30 @@ export default function Favorites({
         {error && <div className="error-box">Error: {error}</div>}
 
         <div className="stations-list">
-          {sortedFavorites.map((station) => (
-            <StationCard
-              key={station.id}
-              station={station}
-              price={prices[station.id]}
-              isFavorite={favoriteIds.has(station.id)}
-              selectedFuel={selectedFuel}
-              onToggleFavorite={onToggleFavorite}
-              onSelect={handleSelectStation}
-            />
-          ))}
+          {sortedFavorites.map((station) => {
+            const stationPrice = pickPrice(station, prices[station.id], fuel);
+            const detourCost = calcDetourCost(
+              stationPrice,
+              baselinePrice,
+              station.dist ?? 0,
+              baselineDist,
+              fillVolume,
+              consumption,
+              detourFactor
+            );
+            return (
+              <StationCard
+                key={station.id}
+                station={station}
+                price={prices[station.id]}
+                isFavorite={favoriteIds.has(station.id)}
+                selectedFuel={selectedFuel}
+                detourCost={detourCost}
+                onToggleFavorite={onToggleFavorite}
+                onSelect={handleSelectStation}
+              />
+            );
+          })}
         </div>
       </div>
 

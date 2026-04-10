@@ -618,6 +618,18 @@ a:hover { text-decoration: underline; }
 }
 .station-card.clickable:hover .show-on-map-hint { opacity: 1; }
 
+/* ── Detour cost badge ────────────────────────────────────────────── */
+.detour-badge {
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 5px;
+  padding: 2px 7px;
+  white-space: nowrap;
+}
+.detour-badge.baseline  { background: rgba(62, 207, 110, 0.15); color: var(--color-open); }
+.detour-badge.warning   { background: rgba(245, 197, 24, 0.15);  color: var(--color-gold); }
+.detour-badge.expensive { background: rgba(224, 92, 92, 0.15);   color: var(--color-closed); }
+
 /* ── Feedback boxes ───────────────────────────────────────────────── */
 .loading-box,
 .error-box,

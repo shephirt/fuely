@@ -3,7 +3,7 @@ import { getNearby } from "../api";
 import type { Station, FuelType, FavoriteStation } from "../types";
 import type { LocationState } from "../App";
 import type { SortFuel, SortBy } from "../utils/stationUtils";
-import { effectiveSortFuel, sortStations } from "../utils/stationUtils";
+import { effectiveSortFuel, sortStations, pickPrice, calcDetourCost } from "../utils/stationUtils";
 import StationCard from "../components/StationCard";
 import Map, { type MapHandle } from "../components/Map";
 import LocationPicker from "../components/LocationPicker";
@@ -32,6 +32,9 @@ export default function Nearby({
   onLocation,
   onRadiusChange,
   sortFuel,
+  consumption,
+  fillVolume,
+  detourFactor,
 }: NearbyProps) {
   const [stations, setStations] = useState<Station[]>([]);
   const [loading, setLoading] = useState(false);
@@ -68,6 +71,15 @@ export default function Nearby({
   const favoriteIds = new Set(favorites.map((f) => f.id));
   const fuel = effectiveSortFuel(selectedFuel, sortFuel);
   const sortedStations = sortStations(stations, sortBy, fuel);
+
+  // Find baseline: station with cheapest price + shortest detour
+  const baselineStation = sortedStations.find(
+    (s) => typeof pickPrice(s, undefined, fuel) === "number"
+  );
+  const baselinePrice = baselineStation
+    ? pickPrice(baselineStation, undefined, fuel)
+    : undefined;
+  const baselineDist = baselineStation?.dist ?? 0;
 
   return (
     <div className="page-layout">
@@ -127,18 +139,31 @@ export default function Nearby({
         )}
 
         <div className="stations-list">
-          {sortedStations.map((station) => (
-            <StationCard
-              key={station.id}
-              station={station}
-              isFavorite={favoriteIds.has(station.id)}
-              selectedFuel={selectedFuel}
-              isOpen={station.isOpen}
-              dist={station.dist}
-              onToggleFavorite={onToggleFavorite}
-              onSelect={handleSelectStation}
-            />
-          ))}
+          {sortedStations.map((station) => {
+            const stationPrice = pickPrice(station, undefined, fuel);
+            const detourCost = calcDetourCost(
+              stationPrice,
+              baselinePrice,
+              station.dist ?? 0,
+              baselineDist,
+              fillVolume,
+              consumption,
+              detourFactor
+            );
+            return (
+              <StationCard
+                key={station.id}
+                station={station}
+                isFavorite={favoriteIds.has(station.id)}
+                selectedFuel={selectedFuel}
+                isOpen={station.isOpen}
+                dist={station.dist}
+                detourCost={detourCost}
+                onToggleFavorite={onToggleFavorite}
+                onSelect={handleSelectStation}
+              />
+            );
+          })}
         </div>
       </div>
 
