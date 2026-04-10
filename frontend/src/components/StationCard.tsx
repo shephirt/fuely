@@ -39,13 +39,25 @@ function PriceBadge({
 
 function DetourBadge({ cost }: { cost: number | "baseline" }) {
   if (cost === "baseline") {
-    return <span className="detour-badge baseline">Cheapest</span>;
+    return <span className="detour-badge baseline">Best price</span>;
   }
-  const cls = cost <= 0 ? "baseline" : cost <= 2 ? "warning" : "expensive";
-  const sign = cost > 0 ? "+" : "";
+  if (cost >= 0) {
+    return (
+      <span className="detour-badge baseline">
+        Save € {cost.toFixed(2)} — Worth it
+      </span>
+    );
+  }
+  if (cost >= -1) {
+    return (
+      <span className="detour-badge warning">
+        Extra € {Math.abs(cost).toFixed(2)} — Barely worth it
+      </span>
+    );
+  }
   return (
-    <span className={`detour-badge ${cls}`}>
-      {sign}{cost.toFixed(2)} €/100 km
+    <span className="detour-badge expensive">
+      Extra € {Math.abs(cost).toFixed(2)} — Not worth it
     </span>
   );
 }

@@ -639,6 +639,7 @@ a:hover { text-decoration: underline; }
   justify-content: space-between;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
 }
 .status-badge {
   font-size: 11px;
