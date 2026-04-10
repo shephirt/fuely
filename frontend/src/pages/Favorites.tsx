@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { getPrices } from "../api";
 import type { FavoriteStation, FuelType, PriceMap } from "../types";
-import type { SortFuel, SortBy } from "../utils/stationUtils";
+import type { SortFuel, SortBy, DetourResult } from "../utils/stationUtils";
 import { effectiveSortFuel, sortStations, sortByDetourCost, pickPrice, calcDetourCost } from "../utils/stationUtils";
 import StationCard from "../components/StationCard";
 import Map, { type MapHandle } from "../components/Map";
@@ -113,7 +113,7 @@ export default function Favorites({
   }
 
   // Pre-compute detour costs for all open favorites (needed for display and cheapest sort)
-  const detourCostMap: Record<string, number | "baseline" | undefined> = {};
+  const detourCostMap: Record<string, DetourResult | undefined> = {};
   for (const s of openFavorites) {
     detourCostMap[s.id] = calcDetourCost(
       pickPrice(s, prices[s.id], fuel),

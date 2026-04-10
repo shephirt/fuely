@@ -1,5 +1,6 @@
 import type { Ref } from "react";
 import type { Station, FavoriteStation, FuelType, StationPrice } from "../types";
+import type { DetourResult } from "../utils/stationUtils";
 
 interface StationCardProps {
   station: Station | FavoriteStation;
@@ -9,7 +10,7 @@ interface StationCardProps {
   isFavorite: boolean;
   selectedFuel: FuelType;
   fillVolume?: number;
-  detourCost?: number | "baseline";
+  detourCost?: DetourResult;
   isSelected?: boolean;
   cardRef?: Ref<HTMLDivElement>;
   onToggleFavorite: (station: Station | FavoriteStation) => void;
@@ -47,31 +48,53 @@ function PriceBadge({
   );
 }
 
-function DetourBadge({ cost }: { cost: number | "baseline" }) {
-  if (cost === "baseline") {
+function DetourBadge({ cost }: { cost: DetourResult }) {
+  if (cost.kind === "baseline") {
     return (
       <span className="detour-badge baseline">
         Best price · no detour needed
       </span>
     );
   }
-  if (cost >= 0) {
+
+  const { netSaving, hasDetour } = cost;
+
+  // Station is closer or same distance — no detour, pure price comparison
+  if (!hasDetour) {
+    if (netSaving >= 0) {
+      // Closer AND cheaper — straightforward saving
+      return (
+        <span className="detour-badge baseline">
+          Saves € {netSaving.toFixed(2)} vs cheapest
+        </span>
+      );
+    }
+    // Closer but more expensive
     return (
-      <span className="detour-badge baseline">
-        Detour saves € {cost.toFixed(2)} · Worth it
+      <span className="detour-badge expensive">
+        € {Math.abs(netSaving).toFixed(2)} more expensive to fill
       </span>
     );
   }
-  if (cost >= -1) {
+
+  // Station is farther — detour is involved
+  if (netSaving >= 0) {
+    return (
+      <span className="detour-badge baseline">
+        Detour saves € {netSaving.toFixed(2)} · Worth it
+      </span>
+    );
+  }
+  if (netSaving >= -1) {
     return (
       <span className="detour-badge warning">
-        Detour costs € {Math.abs(cost).toFixed(2)} extra · Barely worth it
+        Detour costs € {Math.abs(netSaving).toFixed(2)} extra · Barely worth it
       </span>
     );
   }
   return (
     <span className="detour-badge expensive">
-      Detour costs € {Math.abs(cost).toFixed(2)} extra · Not worth it
+      Detour costs € {Math.abs(netSaving).toFixed(2)} extra · Not worth it
     </span>
   );
 }

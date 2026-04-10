@@ -60,17 +60,22 @@ export function sortStations<T extends Station | FavoriteStation>(
   });
 }
 
+/** Structured result from calcDetourCost. */
+export type DetourResult =
+  | { kind: "baseline" }
+  | { kind: "result"; netSaving: number; hasDetour: boolean };
+
 /** Sort stations by their pre-computed net saving (descending — highest saving first).
- *  "baseline" counts as 0. Stations without a cost (undefined) sink to the bottom. */
+ *  "baseline" counts as 0. Stations without a result (undefined) sink to the bottom. */
 export function sortByDetourCost<T extends Station | FavoriteStation>(
   stations: T[],
-  detourCosts: Record<string, number | "baseline" | undefined>
+  detourCosts: Record<string, DetourResult | undefined>
 ): T[] {
   return [...stations].sort((a, b) => {
     const ca = detourCosts[a.id];
     const cb = detourCosts[b.id];
-    const aVal = ca === "baseline" ? 0 : (typeof ca === "number" ? ca : undefined);
-    const bVal = cb === "baseline" ? 0 : (typeof cb === "number" ? cb : undefined);
+    const aVal = !ca ? undefined : ca.kind === "baseline" ? 0 : ca.netSaving;
+    const bVal = !cb ? undefined : cb.kind === "baseline" ? 0 : cb.netSaving;
     if (aVal === undefined && bVal === undefined) return 0;
     if (aVal === undefined) return 1;
     if (bVal === undefined) return -1;
@@ -90,13 +95,12 @@ export function sortByDetourCost<T extends Station | FavoriteStation>(
  *      extra km = (stationDist − baselineDist) × detourFactor × 2
  *
  *   3. Net saving = price difference − detour cost
- *      Positive → detour costs less than the saving → worth it
- *      Negative → detour costs more than the saving → not worth it
+ *      Positive → worth it; negative → not worth it
  *
  *  Returns:
- *   "baseline"  — this IS the cheapest/reference station
- *   number      — net saving in €; positive = save money, negative = costs more
- *   undefined   — cannot calculate (missing price or invalid settings)
+ *   { kind: "baseline" }                         — this IS the reference station
+ *   { kind: "result", netSaving, hasDetour }     — netSaving in €; hasDetour = station is farther
+ *   undefined                                     — cannot calculate
  */
 export function calcDetourCost(
   stationPrice: number | false | undefined,
@@ -106,7 +110,7 @@ export function calcDetourCost(
   fillVolume: number,
   consumption: number,
   detourFactor: number
-): number | "baseline" | undefined {
+): DetourResult | undefined {
   if (
     typeof stationPrice !== "number" ||
     typeof baselinePrice !== "number" ||
@@ -127,7 +131,7 @@ export function calcDetourCost(
   const netSaving = priceDifference - detourFuelCost;
 
   // This IS the baseline station
-  if (stationPrice === baselinePrice && extraKm === 0) return "baseline";
+  if (stationPrice === baselinePrice && extraKm === 0) return { kind: "baseline" };
 
-  return netSaving;
+  return { kind: "result", netSaving, hasDetour: stationDist > baselineDist };
 }

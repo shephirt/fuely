@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { getNearby } from "../api";
 import type { Station, FuelType, FavoriteStation } from "../types";
 import type { LocationState } from "../App";
-import type { SortFuel, SortBy } from "../utils/stationUtils";
+import type { SortFuel, SortBy, DetourResult } from "../utils/stationUtils";
 import { effectiveSortFuel, sortStations, sortByDetourCost, pickPrice, calcDetourCost } from "../utils/stationUtils";
 import StationCard from "../components/StationCard";
 import Map, { type MapHandle } from "../components/Map";
@@ -97,7 +97,7 @@ export default function Nearby({
   }
 
   // Pre-compute detour costs for all open stations (needed for both display and cheapest sort)
-  const detourCostMap: Record<string, number | "baseline" | undefined> = {};
+  const detourCostMap: Record<string, DetourResult | undefined> = {};
   for (const s of openStations) {
     detourCostMap[s.id] = calcDetourCost(
       pickPrice(s, undefined, fuel),
