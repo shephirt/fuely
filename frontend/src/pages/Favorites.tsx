@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { getPrices } from "../api";
 import type { FavoriteStation, FuelType, PriceMap } from "../types";
+import type { SortFuel, SortBy } from "../utils/stationUtils";
+import { effectiveSortFuel, sortStations } from "../utils/stationUtils";
 import StationCard from "../components/StationCard";
 import Map, { type MapHandle } from "../components/Map";
 
@@ -8,17 +10,23 @@ interface FavoritesProps {
   favorites: FavoriteStation[];
   selectedFuel: FuelType;
   onToggleFavorite: (station: FavoriteStation) => void;
+  sortFuel: SortFuel;
+  consumption: number;
+  fillVolume: number;
+  detourFactor: number;
 }
 
 export default function Favorites({
   favorites,
   selectedFuel,
   onToggleFavorite,
+  sortFuel,
 }: FavoritesProps) {
   const [prices, setPrices] = useState<PriceMap>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
+  const [sortBy, setSortBy] = useState<SortBy>("distance");
   const mapRef = useRef<MapHandle>(null);
 
   const fetchAllPrices = useCallback(async () => {
@@ -70,6 +78,8 @@ export default function Favorites({
 
   const favoriteIds = new Set(favorites.map((f) => f.id));
   const firstWithCoords = favorites.find((f) => f.lat && f.lng);
+  const fuel = effectiveSortFuel(selectedFuel, sortFuel);
+  const sortedFavorites = sortStations(favorites, sortBy, fuel, prices);
 
   return (
     <div className="page-layout">
@@ -83,20 +93,38 @@ export default function Favorites({
                 ? `Updated ${lastRefreshed.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
                 : "Prices not yet loaded"}
           </span>
-          <button
-            className="btn-secondary"
-            onClick={fetchAllPrices}
-            disabled={loading}
-            title="Refresh prices now"
-          >
-            {loading ? "…" : "⟳ Refresh"}
-          </button>
+          <div className="toolbar-right">
+            <div className="sort-toggle">
+              <button
+                className={`sort-btn${sortBy === "distance" ? " active" : ""}`}
+                onClick={() => setSortBy("distance")}
+                title="Sort by distance"
+              >
+                Distance
+              </button>
+              <button
+                className={`sort-btn${sortBy === "price" ? " active" : ""}`}
+                onClick={() => setSortBy("price")}
+                title="Sort by price"
+              >
+                Price
+              </button>
+            </div>
+            <button
+              className="btn-secondary"
+              onClick={fetchAllPrices}
+              disabled={loading}
+              title="Refresh prices now"
+            >
+              {loading ? "…" : "⟳ Refresh"}
+            </button>
+          </div>
         </div>
 
         {error && <div className="error-box">Error: {error}</div>}
 
         <div className="stations-list">
-          {favorites.map((station) => (
+          {sortedFavorites.map((station) => (
             <StationCard
               key={station.id}
               station={station}

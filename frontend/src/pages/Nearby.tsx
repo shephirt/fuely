@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { getNearby } from "../api";
 import type { Station, FuelType, FavoriteStation } from "../types";
 import type { LocationState } from "../App";
+import type { SortFuel, SortBy } from "../utils/stationUtils";
+import { effectiveSortFuel, sortStations } from "../utils/stationUtils";
 import StationCard from "../components/StationCard";
 import Map, { type MapHandle } from "../components/Map";
 import LocationPicker from "../components/LocationPicker";
@@ -15,6 +17,10 @@ interface NearbyProps {
   onToggleFavorite: (station: Station | FavoriteStation) => void;
   onLocation: (lat: number, lng: number, label?: string) => void;
   onRadiusChange: (r: number) => void;
+  sortFuel: SortFuel;
+  consumption: number;
+  fillVolume: number;
+  detourFactor: number;
 }
 
 export default function Nearby({
@@ -25,11 +31,13 @@ export default function Nearby({
   onToggleFavorite,
   onLocation,
   onRadiusChange,
+  sortFuel,
 }: NearbyProps) {
   const [stations, setStations] = useState<Station[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
+  const [sortBy, setSortBy] = useState<SortBy>("distance");
   const mapRef = useRef<MapHandle>(null);
 
   const fetchStations = useCallback(() => {
@@ -58,6 +66,8 @@ export default function Nearby({
   }, []);
 
   const favoriteIds = new Set(favorites.map((f) => f.id));
+  const fuel = effectiveSortFuel(selectedFuel, sortFuel);
+  const sortedStations = sortStations(stations, sortBy, fuel);
 
   return (
     <div className="page-layout">
@@ -76,14 +86,32 @@ export default function Nearby({
                 ? `Updated ${lastRefreshed.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
                 : ""}
           </span>
-          <button
-            className="btn-secondary"
-            onClick={fetchStations}
-            disabled={loading || !location}
-            title="Refresh prices"
-          >
-            {loading ? "…" : "⟳ Refresh"}
-          </button>
+          <div className="toolbar-right">
+            <div className="sort-toggle">
+              <button
+                className={`sort-btn${sortBy === "distance" ? " active" : ""}`}
+                onClick={() => setSortBy("distance")}
+                title="Sort by distance"
+              >
+                Distance
+              </button>
+              <button
+                className={`sort-btn${sortBy === "price" ? " active" : ""}`}
+                onClick={() => setSortBy("price")}
+                title="Sort by price"
+              >
+                Price
+              </button>
+            </div>
+            <button
+              className="btn-secondary"
+              onClick={fetchStations}
+              disabled={loading || !location}
+              title="Refresh prices"
+            >
+              {loading ? "…" : "⟳ Refresh"}
+            </button>
+          </div>
         </div>
 
         {!location && (
@@ -99,7 +127,7 @@ export default function Nearby({
         )}
 
         <div className="stations-list">
-          {stations.map((station) => (
+          {sortedStations.map((station) => (
             <StationCard
               key={station.id}
               station={station}

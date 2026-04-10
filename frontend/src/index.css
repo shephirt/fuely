@@ -117,6 +117,40 @@ a:hover { text-decoration: underline; }
   border-radius: 8px;
   padding: 3px;
 }
+.settings-input-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.settings-input {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  color: var(--color-text);
+  font-size: 14px;
+  padding: 4px 8px;
+  width: 72px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.settings-input:focus { border-color: var(--color-accent); }
+.settings-unit {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+.settings-select {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  color: var(--color-text);
+  font-size: 13px;
+  padding: 4px 8px;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.settings-select:focus { border-color: var(--color-accent); }
 
 /* ── Tab nav (inside header) ──────────────────────────────────────── */
 .tab-nav {
@@ -396,6 +430,34 @@ a:hover { text-decoration: underline; }
   justify-content: space-between;
   gap: 12px;
 }
+.toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ── Sort toggle ──────────────────────────────────────────────────── */
+.sort-toggle {
+  display: flex;
+  gap: 2px;
+  background: var(--color-surface-2);
+  border-radius: 8px;
+  padding: 3px;
+}
+.sort-btn {
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+.sort-btn:hover { background: var(--color-border); color: var(--color-text); }
+.sort-btn.active { background: var(--color-accent); color: #fff; }
 
 /* ── Favorites toolbar (legacy alias kept for safety) ─────────────── */
 .favorites-toolbar {
