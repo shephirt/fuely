@@ -1,7 +1,9 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
-const APP_VERSION = "0.2.1";
+// Injected via ENV in the Docker frontend-builder stage (from the git tag).
+// Falls back to "dev" for local development builds.
+const APP_VERSION = process.env.VERSION ?? "dev";
 
 export default defineConfig({
   plugins: [react()],

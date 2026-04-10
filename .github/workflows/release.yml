@@ -4,12 +4,6 @@ on:
   push:
     tags:
       - "v*.*.*"
-  workflow_dispatch:
-    inputs:
-      version:
-        description: "Version tag to (re-)publish, e.g. v0.1.0"
-        required: true
-        type: string
 
 permissions:
   contents: write        # create GitHub Releases
@@ -24,17 +18,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # ── 2. Derive metadata ─────────────────────────────────────────
-      # On tag push:        VERSION = the git tag (e.g. v0.1.0)
-      # On manual dispatch: VERSION = the user-supplied input
+      # ── 2. Derive metadata from the git tag ────────────────────────
       - name: Extract metadata
         id: meta
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            VERSION="${{ inputs.version }}"
-          else
-            VERSION="${GITHUB_REF_NAME}"
-          fi
+          VERSION="${GITHUB_REF_NAME}"
           VERSION_PLAIN="${VERSION#v}"
           GIT_REVISION="${GITHUB_SHA::7}"
           BUILD_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
@@ -71,10 +59,8 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # ── 6. Create GitHub Release (tag-push only) ───────────────────
-      # Skipped on manual workflow_dispatch to avoid duplicate release notes.
+      # ── 6. Create GitHub Release ───────────────────────────────────
       - name: Create GitHub Release
-        if: github.event_name == 'push'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.meta.outputs.version }}
