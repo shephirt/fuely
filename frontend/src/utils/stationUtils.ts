@@ -62,11 +62,11 @@ export function sortStations<T extends Station | FavoriteStation>(
 
 /** Structured result from calcDetourCost. */
 export type DetourResult =
-  | { kind: "baseline" }
+  | { kind: "nearest" }
   | { kind: "result"; netSaving: number; hasDetour: boolean };
 
 /** Sort stations by their pre-computed net saving (descending — highest saving first).
- *  "baseline" counts as 0. Stations without a result (undefined) sink to the bottom. */
+ *  "nearest" counts as 0. Stations without a result (undefined) sink to the bottom. */
 export function sortByDetourCost<T extends Station | FavoriteStation>(
   stations: T[],
   detourCosts: Record<string, DetourResult | undefined>
@@ -74,8 +74,8 @@ export function sortByDetourCost<T extends Station | FavoriteStation>(
   return [...stations].sort((a, b) => {
     const ca = detourCosts[a.id];
     const cb = detourCosts[b.id];
-    const aVal = !ca ? undefined : ca.kind === "baseline" ? 0 : ca.netSaving;
-    const bVal = !cb ? undefined : cb.kind === "baseline" ? 0 : cb.netSaving;
+    const aVal = !ca ? undefined : ca.kind === "nearest" ? 0 : ca.netSaving;
+    const bVal = !cb ? undefined : cb.kind === "nearest" ? 0 : cb.netSaving;
     if (aVal === undefined && bVal === undefined) return 0;
     if (aVal === undefined) return 1;
     if (bVal === undefined) return -1;
@@ -83,55 +83,50 @@ export function sortByDetourCost<T extends Station | FavoriteStation>(
   });
 }
 
-/** Compute the net saving (in €) of fuelling at this station vs the baseline.
+/** Compute the net saving (in €) of going to this station vs the nearest open station.
  *
- *  Steps:
- *   1. Fill cost at baseline = baselinePrice × fillVolume
- *      Fill cost here        = stationPrice  × fillVolume
- *      Price difference      = (baselinePrice − stationPrice) × fillVolume
+ *  For each station the total trip cost from the user's location is:
+ *    driveCost = dist × detourFactor × (consumption / 100) × stationPrice
+ *    fillCost  = stationPrice × fillVolume
+ *    totalCost = driveCost + fillCost
  *
- *   2. Detour cost = extra round-trip km × (consumption / 100) × stationPrice
- *      (burned at this station's price because you just filled up here)
- *      extra km = (stationDist − baselineDist) × detourFactor × 2
- *
- *   3. Net saving = price difference − detour cost
- *      Positive → worth it; negative → not worth it
+ *  Net saving = totalCost(nearest) − totalCost(thisStation)
+ *    Positive → going here is cheaper overall than going to the nearest station
+ *    Negative → going here costs more overall
  *
  *  Returns:
- *   { kind: "baseline" }                         — this IS the reference station
- *   { kind: "result", netSaving, hasDetour }     — netSaving in €; hasDetour = station is farther
- *   undefined                                     — cannot calculate
+ *   { kind: "nearest" }                          — this IS the nearest open station
+ *   { kind: "result", netSaving, hasDetour }     — netSaving in €; hasDetour = farther than nearest
+ *   undefined                                     — cannot calculate (missing price / settings)
  */
 export function calcDetourCost(
   stationPrice: number | false | undefined,
-  baselinePrice: number | false | undefined,
   stationDist: number,
-  baselineDist: number,
+  nearestPrice: number | false | undefined,
+  nearestDist: number,
   fillVolume: number,
   consumption: number,
   detourFactor: number
 ): DetourResult | undefined {
   if (
     typeof stationPrice !== "number" ||
-    typeof baselinePrice !== "number" ||
+    typeof nearestPrice !== "number" ||
     fillVolume <= 0 ||
     consumption <= 0
   ) {
     return undefined;
   }
 
-  // Step 1: how much cheaper is it to fill up here vs the baseline?
-  const priceDifference = (baselinePrice - stationPrice) * fillVolume;
+  // This IS the nearest station
+  if (stationDist === nearestDist && stationPrice === nearestPrice) {
+    return { kind: "nearest" };
+  }
 
-  // Step 2: cost of driving the extra round-trip km, burned at this station's price
-  const extraKm = Math.max(0, (stationDist - baselineDist) * detourFactor * 2);
-  const detourFuelCost = extraKm * (consumption / 100) * stationPrice;
+  const totalCost = (price: number, dist: number) =>
+    dist * detourFactor * (consumption / 100) * price + price * fillVolume;
 
-  // Step 3: is the saving greater than the detour cost?
-  const netSaving = priceDifference - detourFuelCost;
+  const netSaving = totalCost(nearestPrice, nearestDist) - totalCost(stationPrice, stationDist);
+  const hasDetour = stationDist > nearestDist;
 
-  // This IS the baseline station
-  if (stationPrice === baselinePrice && extraKm === 0) return { kind: "baseline" };
-
-  return { kind: "result", netSaving, hasDetour: stationDist > baselineDist };
+  return { kind: "result", netSaving, hasDetour };
 }

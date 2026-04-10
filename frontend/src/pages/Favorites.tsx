@@ -99,15 +99,15 @@ export default function Favorites({
     (f) => !prices[f.id] || prices[f.id].status === "open"
   );
 
-  // Baseline: station with the lowest price for the effective fuel, independent of sort order
-  let baselinePrice: number | false | undefined;
-  let baselineDist = 0;
+  // Nearest open favorite with a valid price — the natural reference point
+  let nearestPrice: number | false | undefined;
+  let nearestDist = 0;
   for (const s of openFavorites) {
     const p = pickPrice(s, prices[s.id], fuel);
     if (typeof p === "number") {
-      if (typeof baselinePrice !== "number" || p < baselinePrice) {
-        baselinePrice = p;
-        baselineDist = s.dist ?? 0;
+      if (nearestPrice === undefined || (s.dist ?? 0) < nearestDist) {
+        nearestPrice = p;
+        nearestDist = s.dist ?? 0;
       }
     }
   }
@@ -117,9 +117,9 @@ export default function Favorites({
   for (const s of openFavorites) {
     detourCostMap[s.id] = calcDetourCost(
       pickPrice(s, prices[s.id], fuel),
-      baselinePrice,
       s.dist ?? 0,
-      baselineDist,
+      nearestPrice,
+      nearestDist,
       fillVolume,
       consumption,
       detourFactor

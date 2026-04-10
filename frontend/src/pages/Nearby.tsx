@@ -83,27 +83,27 @@ export default function Nearby({
   const fuel = effectiveSortFuel(selectedFuel, sortFuel);
   const openStations = stations.filter((s) => s.isOpen);
 
-  // Baseline: station with the lowest price for the effective fuel, independent of sort order
-  let baselinePrice: number | false | undefined;
-  let baselineDist = 0;
+  // Nearest open station with a valid price — the natural reference point
+  let nearestPrice: number | false | undefined;
+  let nearestDist = 0;
   for (const s of openStations) {
     const p = pickPrice(s, undefined, fuel);
     if (typeof p === "number") {
-      if (typeof baselinePrice !== "number" || p < baselinePrice) {
-        baselinePrice = p;
-        baselineDist = s.dist ?? 0;
+      if (nearestPrice === undefined || (s.dist ?? 0) < nearestDist) {
+        nearestPrice = p;
+        nearestDist = s.dist ?? 0;
       }
     }
   }
 
-  // Pre-compute detour costs for all open stations (needed for both display and cheapest sort)
+  // Pre-compute trip costs for all open stations (needed for both display and cheapest sort)
   const detourCostMap: Record<string, DetourResult | undefined> = {};
   for (const s of openStations) {
     detourCostMap[s.id] = calcDetourCost(
       pickPrice(s, undefined, fuel),
-      baselinePrice,
       s.dist ?? 0,
-      baselineDist,
+      nearestPrice,
+      nearestDist,
       fillVolume,
       consumption,
       detourFactor

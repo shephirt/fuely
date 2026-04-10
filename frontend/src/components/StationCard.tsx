@@ -49,10 +49,10 @@ function PriceBadge({
 }
 
 function DetourBadge({ cost }: { cost: DetourResult }) {
-  if (cost.kind === "baseline") {
+  if (cost.kind === "nearest") {
     return (
       <span className="detour-badge baseline">
-        Best price · no detour needed
+        Nearest station · reference point
       </span>
     );
   }
@@ -65,7 +65,7 @@ function DetourBadge({ cost }: { cost: DetourResult }) {
       // Closer AND cheaper — straightforward saving
       return (
         <span className="detour-badge baseline">
-          Saves € {netSaving.toFixed(2)} vs cheapest
+          Saves € {netSaving.toFixed(2)} vs nearest
         </span>
       );
     }
