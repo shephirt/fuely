@@ -189,6 +189,7 @@ export default function Nearby({
               selectedFuel={selectedFuel}
               isOpen={station.isOpen}
               dist={station.dist}
+              fillVolume={fillVolume}
               detourCost={detourCostMap[station.id]}
               isSelected={selectedStationId === station.id}
               cardRef={(el) => {

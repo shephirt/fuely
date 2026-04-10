@@ -633,6 +633,13 @@ a:hover { text-decoration: underline; }
   font-weight: 700;
   color: var(--color-text);
 }
+.price-total {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+  white-space: nowrap;
+}
 
 .station-footer {
   display: flex;

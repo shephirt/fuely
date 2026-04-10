@@ -8,6 +8,7 @@ interface StationCardProps {
   dist?: number;
   isFavorite: boolean;
   selectedFuel: FuelType;
+  fillVolume?: number;
   detourCost?: number | "baseline";
   isSelected?: boolean;
   cardRef?: Ref<HTMLDivElement>;
@@ -20,44 +21,57 @@ function formatPrice(price: number | false | undefined): string {
   return `€ ${price.toFixed(3)}`;
 }
 
+function formatTotal(price: number | false | undefined, fillVolume: number | undefined): string | null {
+  if (typeof price !== "number" || !fillVolume) return null;
+  return `€ ${(price * fillVolume).toFixed(2)} total`;
+}
+
 function PriceBadge({
   label,
   price,
   highlighted,
+  fillVolume,
 }: {
   label: string;
   price: number | false | undefined;
   highlighted: boolean;
+  fillVolume?: number;
 }) {
+  const total = formatTotal(price, fillVolume);
   return (
     <div className={`price-badge${highlighted ? " highlighted" : ""}`}>
       <span className="price-label">{label}</span>
       <span className="price-value">{formatPrice(price)}</span>
+      {total && <span className="price-total">{total}</span>}
     </div>
   );
 }
 
 function DetourBadge({ cost }: { cost: number | "baseline" }) {
   if (cost === "baseline") {
-    return <span className="detour-badge baseline">Best price</span>;
+    return (
+      <span className="detour-badge baseline">
+        Best price · no detour needed
+      </span>
+    );
   }
   if (cost >= 0) {
     return (
       <span className="detour-badge baseline">
-        Save € {cost.toFixed(2)} — Worth it
+        Detour saves € {cost.toFixed(2)} · Worth it
       </span>
     );
   }
   if (cost >= -1) {
     return (
       <span className="detour-badge warning">
-        Extra € {Math.abs(cost).toFixed(2)} — Barely worth it
+        Detour costs € {Math.abs(cost).toFixed(2)} extra · Barely worth it
       </span>
     );
   }
   return (
     <span className="detour-badge expensive">
-      Extra € {Math.abs(cost).toFixed(2)} — Not worth it
+      Detour costs € {Math.abs(cost).toFixed(2)} extra · Not worth it
     </span>
   );
 }
@@ -69,6 +83,7 @@ export default function StationCard({
   dist,
   isFavorite,
   selectedFuel,
+  fillVolume,
   detourCost,
   isSelected,
   cardRef,
@@ -137,16 +152,19 @@ export default function StationCard({
           label="E5"
           price={e5 as number | false | undefined}
           highlighted={selectedFuel === "e5" || selectedFuel === "all"}
+          fillVolume={fillVolume}
         />
         <PriceBadge
           label="E10"
           price={e10 as number | false | undefined}
           highlighted={selectedFuel === "e10" || selectedFuel === "all"}
+          fillVolume={fillVolume}
         />
         <PriceBadge
           label="Diesel"
           price={diesel as number | false | undefined}
           highlighted={selectedFuel === "diesel" || selectedFuel === "all"}
+          fillVolume={fillVolume}
         />
       </div>
 

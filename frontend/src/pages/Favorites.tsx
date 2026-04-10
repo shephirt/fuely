@@ -189,6 +189,7 @@ export default function Favorites({
               price={prices[station.id]}
               isFavorite={favoriteIds.has(station.id)}
               selectedFuel={selectedFuel}
+              fillVolume={fillVolume}
               detourCost={detourCostMap[station.id]}
               isSelected={selectedStationId === station.id}
               cardRef={(el) => {
