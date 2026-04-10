@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { getPrices } from "../api";
 import type { FavoriteStation, FuelType, PriceMap } from "../types";
 import type { SortFuel, SortBy, DetourResult } from "../utils/stationUtils";
-import { effectiveSortFuel, sortStations, sortByDetourCost, pickPrice, calcDetourCost, haversineKm } from "../utils/stationUtils";
+import { effectiveSortFuel, sortStations, sortByDetourCost, sortByTotalCost, pickPrice, calcDetourCost, calcTotalCost, haversineKm } from "../utils/stationUtils";
 import StationCard from "../components/StationCard";
 import Map, { type MapHandle } from "../components/Map";
 import type { LocationState } from "../App";
@@ -136,6 +136,18 @@ export default function Favorites({
     );
   }
 
+  // Pre-compute absolute total costs for total-cost sort
+  const totalCostMap: Record<string, number | undefined> = {};
+  for (const s of openFavorites) {
+    totalCostMap[s.id] = calcTotalCost(
+      pickPrice(s, prices[s.id], fuel),
+      stationDist(s),
+      fillVolume,
+      consumption,
+      detourFactor
+    );
+  }
+
   // Enrich favorites with home-computed dist so sorting works correctly
   const openFavoritesWithDist = openFavorites.map((s) =>
     homeAddress ? { ...s, dist: stationDist(s) } : s
@@ -145,7 +157,9 @@ export default function Favorites({
   const sortedFavorites =
     sortBy === "cheapest"
       ? sortByDetourCost(openFavoritesWithDist, detourCostMap)
-      : sortStations(openFavoritesWithDist, sortBy, fuel, prices);
+      : sortBy === "total-cost"
+        ? sortByTotalCost(openFavoritesWithDist, totalCostMap)
+        : sortStations(openFavoritesWithDist, sortBy, fuel, prices);
 
   return (
     <div className="page-layout">
@@ -181,6 +195,13 @@ export default function Favorites({
                 title="Sort by net cost including detour (cheapest overall)"
               >
                 Cheapest
+              </button>
+              <button
+                className={`sort-btn${sortBy === "total-cost" ? " active" : ""}`}
+                onClick={() => setSortBy("total-cost")}
+                title="Sort by absolute total cost (drive + fill)"
+              >
+                Total cost
               </button>
             </div>
             <button

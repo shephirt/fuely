@@ -44,6 +44,8 @@ function getApiKey(): string {
  * Tankerkoenig returns `price` instead of the fuel-type key when a single
  * fuel type is requested. Normalise all stations so they always carry
  * explicit e5/e10/diesel fields.
+ * Also coerce null prices to false — Tankerkoenig sends null for fuels a
+ * station doesn't offer, but our frontend type is `number | false | undefined`.
  */
 function normaliseStation(station: unknown, type: string): Station {
   const s = { ...(station as object) } as unknown as Station & { price?: number };
@@ -53,6 +55,10 @@ function normaliseStation(station: unknown, type: string): Station {
     else if (type === "diesel") s.diesel = s.price;
     delete s.price;
   }
+  // Coerce null → false for all fuel price fields
+  if ((s.e5 as unknown) === null) s.e5 = false;
+  if ((s.e10 as unknown) === null) s.e10 = false;
+  if ((s.diesel as unknown) === null) s.diesel = false;
   return s;
 }
 
