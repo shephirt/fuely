@@ -81,7 +81,8 @@ export default function Nearby({
 
   const favoriteIds = new Set(favorites.map((f) => f.id));
   const fuel = effectiveSortFuel(selectedFuel, sortFuel);
-  const sortedStations = sortStations(stations, sortBy, fuel);
+  const openStations = stations.filter((s) => s.isOpen);
+  const sortedStations = sortStations(openStations, sortBy, fuel);
 
   // Find baseline: first station in sorted list with a valid price
   const baselineStation = sortedStations.find(
@@ -190,7 +191,7 @@ export default function Nearby({
             ref={mapRef}
             userLat={location.lat}
             userLng={location.lng}
-            stations={stations}
+            stations={openStations}
             selectedFuel={selectedFuel}
             radius={radius}
             onMarkerClick={handleMarkerClick}

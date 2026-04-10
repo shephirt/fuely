@@ -521,7 +521,6 @@ a:hover { text-decoration: underline; }
 }
 .station-card.clickable { cursor: pointer; }
 .station-card.clickable:hover { border-color: var(--color-accent); }
-.station-card.closed { opacity: 0.65; }
 
 /* Card highlight when selected from map marker click */
 @keyframes card-highlight-fade {

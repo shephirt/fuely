@@ -93,7 +93,12 @@ export default function Favorites({
   const favoriteIds = new Set(favorites.map((f) => f.id));
   const firstWithCoords = favorites.find((f) => f.lat && f.lng);
   const fuel = effectiveSortFuel(selectedFuel, sortFuel);
-  const sortedFavorites = sortStations(favorites, sortBy, fuel, prices);
+
+  // Hide stations that are confirmed closed (keep those without price data yet)
+  const openFavorites = favorites.filter(
+    (f) => !prices[f.id] || prices[f.id].status === "open"
+  );
+  const sortedFavorites = sortStations(openFavorites, sortBy, fuel, prices);
 
   // Baseline: first station in sorted list with a valid price
   const baselineStation = sortedFavorites.find(
@@ -186,7 +191,7 @@ export default function Favorites({
             ref={mapRef}
             userLat={firstWithCoords.lat}
             userLng={firstWithCoords.lng}
-            stations={favorites}
+            stations={openFavorites}
             prices={prices}
             selectedFuel={selectedFuel}
             onMarkerClick={handleMarkerClick}
