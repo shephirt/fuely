@@ -1,7 +1,7 @@
 import type { Station, FavoriteStation, FuelType, StationPrice } from "../types";
 
 export type SortFuel = "e5" | "e10" | "diesel" | "cheapest";
-export type SortBy = "distance" | "price" | "cheapest";
+export type SortBy = "distance" | "price" | "cheapest" | "total-cost";
 
 /** Haversine distance in km between two lat/lng points. */
 export function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
@@ -141,4 +141,38 @@ export function calcDetourCost(
   const hasDetour = stationDist > nearestDist;
 
   return { kind: "result", netSaving, hasDetour };
+}
+
+/** Compute the absolute total trip cost (€) for visiting a station from the user's location:
+ *    driveCost = dist × detourFactor × (consumption / 100) × price
+ *    fillCost  = price × fillVolume
+ *    total     = driveCost + fillCost
+ *
+ *  Returns undefined if price or settings are unavailable.
+ */
+export function calcTotalCost(
+  price: number | false | undefined,
+  dist: number,
+  fillVolume: number,
+  consumption: number,
+  detourFactor: number
+): number | undefined {
+  if (typeof price !== "number" || fillVolume <= 0 || consumption <= 0) return undefined;
+  return dist * detourFactor * (consumption / 100) * price + price * fillVolume;
+}
+
+/** Sort stations by absolute total trip cost ascending (cheapest total first).
+ *  Stations without a computable total cost sink to the bottom. */
+export function sortByTotalCost<T extends Station | FavoriteStation>(
+  stations: T[],
+  totalCosts: Record<string, number | undefined>
+): T[] {
+  return [...stations].sort((a, b) => {
+    const ca = totalCosts[a.id];
+    const cb = totalCosts[b.id];
+    if (ca === undefined && cb === undefined) return 0;
+    if (ca === undefined) return 1;
+    if (cb === undefined) return -1;
+    return ca - cb; // ascending: cheapest total first
+  });
 }

@@ -3,7 +3,7 @@ import { getNearby } from "../api";
 import type { Station, FuelType, FavoriteStation } from "../types";
 import type { LocationState } from "../App";
 import type { SortFuel, SortBy, DetourResult } from "../utils/stationUtils";
-import { effectiveSortFuel, sortStations, sortByDetourCost, pickPrice, calcDetourCost } from "../utils/stationUtils";
+import { effectiveSortFuel, sortStations, sortByDetourCost, sortByTotalCost, pickPrice, calcDetourCost, calcTotalCost } from "../utils/stationUtils";
 import StationCard from "../components/StationCard";
 import Map, { type MapHandle } from "../components/Map";
 import LocationPicker from "../components/LocationPicker";
@@ -110,11 +110,25 @@ export default function Nearby({
     );
   }
 
+  // Pre-compute absolute total costs for total-cost sort
+  const totalCostMap: Record<string, number | undefined> = {};
+  for (const s of openStations) {
+    totalCostMap[s.id] = calcTotalCost(
+      pickPrice(s, undefined, fuel),
+      s.dist ?? 0,
+      fillVolume,
+      consumption,
+      detourFactor
+    );
+  }
+
   // Apply sort
   const sortedStations =
     sortBy === "cheapest"
       ? sortByDetourCost(openStations, detourCostMap)
-      : sortStations(openStations, sortBy, fuel);
+      : sortBy === "total-cost"
+        ? sortByTotalCost(openStations, totalCostMap)
+        : sortStations(openStations, sortBy, fuel);
 
   return (
     <div className="page-layout">
@@ -155,6 +169,13 @@ export default function Nearby({
                 title="Sort by net cost including detour (cheapest overall)"
               >
                 Cheapest
+              </button>
+              <button
+                className={`sort-btn${sortBy === "total-cost" ? " active" : ""}`}
+                onClick={() => setSortBy("total-cost")}
+                title="Sort by absolute total cost (drive + fill)"
+              >
+                Total cost
               </button>
             </div>
             <button
