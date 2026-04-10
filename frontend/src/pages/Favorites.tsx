@@ -30,7 +30,9 @@ export default function Favorites({
   const [error, setError] = useState<string | null>(null);
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
   const [sortBy, setSortBy] = useState<SortBy>("distance");
+  const [selectedStationId, setSelectedStationId] = useState<string | null>(null);
   const mapRef = useRef<MapHandle>(null);
+  const cardRefs = useRef<Record<string, HTMLDivElement>>({});
 
   const fetchAllPrices = useCallback(async () => {
     if (favorites.length === 0) {
@@ -67,7 +69,16 @@ export default function Favorites({
   }, [fetchAllPrices]);
 
   const handleSelectStation = useCallback((station: FavoriteStation) => {
-    mapRef.current?.flyToStation(station.lat, station.lng);
+    mapRef.current?.flyToStation(station.lat, station.lng, station.id);
+  }, []);
+
+  const handleMarkerClick = useCallback((stationId: string) => {
+    setSelectedStationId(stationId);
+    const card = cardRefs.current[stationId];
+    if (card) {
+      card.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+    setTimeout(() => setSelectedStationId(null), 2000);
   }, []);
 
   if (favorites.length === 0) {
@@ -155,6 +166,11 @@ export default function Favorites({
                 isFavorite={favoriteIds.has(station.id)}
                 selectedFuel={selectedFuel}
                 detourCost={detourCost}
+                isSelected={selectedStationId === station.id}
+                cardRef={(el) => {
+                  if (el) cardRefs.current[station.id] = el;
+                  else delete cardRefs.current[station.id];
+                }}
                 onToggleFavorite={onToggleFavorite}
                 onSelect={handleSelectStation}
               />
@@ -173,6 +189,7 @@ export default function Favorites({
             stations={favorites}
             prices={prices}
             selectedFuel={selectedFuel}
+            onMarkerClick={handleMarkerClick}
           />
         )}
       </div>

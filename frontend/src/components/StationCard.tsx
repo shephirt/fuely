@@ -1,3 +1,4 @@
+import type { Ref } from "react";
 import type { Station, FavoriteStation, FuelType, StationPrice } from "../types";
 
 interface StationCardProps {
@@ -8,6 +9,8 @@ interface StationCardProps {
   isFavorite: boolean;
   selectedFuel: FuelType;
   detourCost?: number | "baseline";
+  isSelected?: boolean;
+  cardRef?: Ref<HTMLDivElement>;
   onToggleFavorite: (station: Station | FavoriteStation) => void;
   onSelect?: (station: Station | FavoriteStation) => void;
 }
@@ -55,6 +58,8 @@ export default function StationCard({
   isFavorite,
   selectedFuel,
   detourCost,
+  isSelected,
+  cardRef,
   onToggleFavorite,
   onSelect,
 }: StationCardProps) {
@@ -67,7 +72,15 @@ export default function StationCard({
 
   return (
     <div
-      className={`station-card${open ? "" : " closed"}${onSelect ? " clickable" : ""}`}
+      ref={cardRef}
+      className={[
+        "station-card",
+        open ? "" : "closed",
+        onSelect ? "clickable" : "",
+        isSelected ? "selected" : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
       onClick={() => onSelect?.(station)}
       role={onSelect ? "button" : undefined}
       tabIndex={onSelect ? 0 : undefined}

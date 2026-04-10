@@ -41,7 +41,9 @@ export default function Nearby({
   const [error, setError] = useState<string | null>(null);
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
   const [sortBy, setSortBy] = useState<SortBy>("distance");
+  const [selectedStationId, setSelectedStationId] = useState<string | null>(null);
   const mapRef = useRef<MapHandle>(null);
+  const cardRefs = useRef<Record<string, HTMLDivElement>>({});
 
   const fetchStations = useCallback(() => {
     if (!location) return;
@@ -65,14 +67,23 @@ export default function Nearby({
   }, [fetchStations]);
 
   const handleSelectStation = useCallback((station: Station | FavoriteStation) => {
-    mapRef.current?.flyToStation(station.lat, station.lng);
+    mapRef.current?.flyToStation(station.lat, station.lng, station.id);
+  }, []);
+
+  const handleMarkerClick = useCallback((stationId: string) => {
+    setSelectedStationId(stationId);
+    const card = cardRefs.current[stationId];
+    if (card) {
+      card.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+    setTimeout(() => setSelectedStationId(null), 2000);
   }, []);
 
   const favoriteIds = new Set(favorites.map((f) => f.id));
   const fuel = effectiveSortFuel(selectedFuel, sortFuel);
   const sortedStations = sortStations(stations, sortBy, fuel);
 
-  // Find baseline: station with cheapest price + shortest detour
+  // Find baseline: first station in sorted list with a valid price
   const baselineStation = sortedStations.find(
     (s) => typeof pickPrice(s, undefined, fuel) === "number"
   );
@@ -159,6 +170,11 @@ export default function Nearby({
                 isOpen={station.isOpen}
                 dist={station.dist}
                 detourCost={detourCost}
+                isSelected={selectedStationId === station.id}
+                cardRef={(el) => {
+                  if (el) cardRefs.current[station.id] = el;
+                  else delete cardRefs.current[station.id];
+                }}
                 onToggleFavorite={onToggleFavorite}
                 onSelect={handleSelectStation}
               />
@@ -177,6 +193,7 @@ export default function Nearby({
             stations={stations}
             selectedFuel={selectedFuel}
             radius={radius}
+            onMarkerClick={handleMarkerClick}
           />
         ) : (
           <div className="map-placeholder" />
