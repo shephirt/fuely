@@ -1,3 +1,4 @@
+import type { Ref } from "react";
 import type { Station, FavoriteStation, FuelType, StationPrice } from "../types";
 
 interface StationCardProps {
@@ -7,6 +8,9 @@ interface StationCardProps {
   dist?: number;
   isFavorite: boolean;
   selectedFuel: FuelType;
+  detourCost?: number | "baseline";
+  isSelected?: boolean;
+  cardRef?: Ref<HTMLDivElement>;
   onToggleFavorite: (station: Station | FavoriteStation) => void;
   onSelect?: (station: Station | FavoriteStation) => void;
 }
@@ -33,6 +37,19 @@ function PriceBadge({
   );
 }
 
+function DetourBadge({ cost }: { cost: number | "baseline" }) {
+  if (cost === "baseline") {
+    return <span className="detour-badge baseline">Cheapest</span>;
+  }
+  const cls = cost <= 0 ? "baseline" : cost <= 2 ? "warning" : "expensive";
+  const sign = cost > 0 ? "+" : "";
+  return (
+    <span className={`detour-badge ${cls}`}>
+      {sign}{cost.toFixed(2)} €/100 km
+    </span>
+  );
+}
+
 export default function StationCard({
   station,
   price,
@@ -40,6 +57,9 @@ export default function StationCard({
   dist,
   isFavorite,
   selectedFuel,
+  detourCost,
+  isSelected,
+  cardRef,
   onToggleFavorite,
   onSelect,
 }: StationCardProps) {
@@ -52,7 +72,15 @@ export default function StationCard({
 
   return (
     <div
-      className={`station-card${open ? "" : " closed"}${onSelect ? " clickable" : ""}`}
+      ref={cardRef}
+      className={[
+        "station-card",
+        open ? "" : "closed",
+        onSelect ? "clickable" : "",
+        isSelected ? "selected" : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
       onClick={() => onSelect?.(station)}
       role={onSelect ? "button" : undefined}
       tabIndex={onSelect ? 0 : undefined}
@@ -114,7 +142,8 @@ export default function StationCard({
         <span className={`status-badge ${open ? "open" : "closed"}`}>
           {open ? "Open" : "Closed"}
         </span>
-        {onSelect && (
+        {detourCost !== undefined && <DetourBadge cost={detourCost} />}
+        {onSelect && detourCost === undefined && (
           <span className="show-on-map-hint">Click to show on map</span>
         )}
       </div>

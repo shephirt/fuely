@@ -1,4 +1,4 @@
-import { useEffect, useImperativeHandle, forwardRef, useRef } from "react";
+import { useEffect, useImperativeHandle, forwardRef, useRef, useCallback } from "react";
 import {
   MapContainer,
   TileLayer,
@@ -23,43 +23,34 @@ L.Icon.Default.mergeOptions({
   shadowUrl: markerShadow,
 });
 
-const openIcon = new L.Icon({
-  iconUrl:
-    "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png",
-  shadowUrl: markerShadow,
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
-});
-
-const closedIcon = new L.Icon({
-  iconUrl:
-    "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png",
-  shadowUrl: markerShadow,
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
-});
-
 function formatPrice(price: number | false | undefined): string {
   if (price === false || price === undefined) return "—";
   return `€ ${price.toFixed(3)}`;
 }
 
+function makePricePin(label: string, isOpen: boolean): L.DivIcon {
+  return L.divIcon({
+    className: "",
+    html: `<div class="map-price-pin${isOpen ? "" : " closed"}">${label}</div>`,
+    iconSize: [0, 0],       // let the pill size itself via CSS
+    iconAnchor: [0, 0],     // top-left corner sits at the lat/lng point
+    popupAnchor: [28, -8],  // open popup above-right of the pin centre
+  });
+}
+
 // ── Inner component that has access to the Leaflet map instance ───────
 export interface MapHandle {
-  flyToStation: (lat: number, lng: number) => void;
+  flyToStation: (lat: number, lng: number, stationId?: string) => void;
 }
 
 interface MapControllerProps {
   userLat: number;
   userLng: number;
   handleRef: React.Ref<MapHandle>;
+  markerRefs: React.MutableRefObject<Record<string, L.Marker>>;
 }
 
-function MapController({ userLat, userLng, handleRef }: MapControllerProps) {
+function MapController({ userLat, userLng, handleRef, markerRefs }: MapControllerProps) {
   const map = useMap();
 
   // Recenter when user location changes
@@ -71,11 +62,16 @@ function MapController({ userLat, userLng, handleRef }: MapControllerProps) {
   useImperativeHandle(
     handleRef,
     () => ({
-      flyToStation: (lat: number, lng: number) => {
+      flyToStation: (lat: number, lng: number, stationId?: string) => {
         map.flyTo([lat, lng], 16, { duration: 0.8 });
+        if (stationId) {
+          setTimeout(() => {
+            markerRefs.current[stationId]?.openPopup();
+          }, 850);
+        }
       },
     }),
-    [map]
+    [map, markerRefs]
   );
 
   return null;
@@ -89,18 +85,31 @@ export interface MapProps {
   prices?: Record<string, StationPrice>;
   selectedFuel: FuelType;
   radius?: number;
+  onMarkerClick?: (stationId: string) => void;
 }
 
 const Map = forwardRef<MapHandle, MapProps>(function Map(
-  { userLat, userLng, stations, prices, selectedFuel, radius },
+  { userLat, userLng, stations, prices, selectedFuel, radius, onMarkerClick },
   ref
 ) {
-  // We need an internal ref to pass to MapController
   const internalRef = useRef<MapHandle>(null);
+  const markerRefs = useRef<Record<string, L.Marker>>({});
 
   useImperativeHandle(ref, () => ({
-    flyToStation: (lat, lng) => internalRef.current?.flyToStation(lat, lng),
+    flyToStation: (lat, lng, stationId) =>
+      internalRef.current?.flyToStation(lat, lng, stationId),
   }));
+
+  const setMarkerRef = useCallback(
+    (id: string) => (marker: L.Marker | null) => {
+      if (marker) {
+        markerRefs.current[id] = marker;
+      } else {
+        delete markerRefs.current[id];
+      }
+    },
+    []
+  );
 
   return (
     <MapContainer
@@ -113,6 +122,7 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
         userLat={userLat}
         userLng={userLng}
         handleRef={internalRef}
+        markerRefs={markerRefs}
       />
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -150,11 +160,30 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
         const diesel =
           price?.diesel ?? ("diesel" in station ? station.diesel : undefined);
 
+        // Resolve the price label shown on the pin
+        const pinPrice =
+          selectedFuel === "e5"
+            ? e5
+            : selectedFuel === "e10"
+              ? e10
+              : selectedFuel === "diesel"
+                ? diesel
+                : e10; // "all" → show E10
+
+        const pinLabel =
+          typeof pinPrice === "number"
+            ? `€ ${pinPrice.toFixed(3)}`
+            : "—";
+
         return (
           <Marker
             key={station.id}
             position={[station.lat, station.lng]}
-            icon={isOpen ? openIcon : closedIcon}
+            icon={makePricePin(pinLabel, isOpen ?? true)}
+            ref={setMarkerRef(station.id)}
+            eventHandlers={{
+              click: () => onMarkerClick?.(station.id),
+            }}
           >
             <Popup>
               <strong>

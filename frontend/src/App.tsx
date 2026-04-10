@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { getFavorites, addFavorite, removeFavorite } from "./api";
 import type { FuelType, FavoriteStation, Station } from "./types";
+import type { SortFuel } from "./utils/stationUtils";
 import FuelTypeToggle from "./components/FuelTypeToggle";
 import Nearby from "./pages/Nearby";
 import Favorites from "./pages/Favorites";
@@ -11,6 +12,10 @@ const FUEL_TYPE_KEY    = "fuely_fuel_type";
 const DEFAULT_TAB_KEY  = "fuely_default_tab";
 const LOCATION_KEY     = "fuely_location";
 const RADIUS_KEY       = "fuely_radius";
+const SORT_FUEL_KEY    = "fuely_sort_fuel";
+const CONSUMPTION_KEY  = "fuely_consumption";
+const FILL_VOLUME_KEY  = "fuely_fill_volume";
+const DETOUR_FACTOR_KEY = "fuely_detour_factor";
 
 export interface LocationState {
   lat: number;
@@ -25,7 +30,6 @@ export default function App() {
   const [selectedFuel, setSelectedFuel] = useState<FuelType>(() =>
     (localStorage.getItem(FUEL_TYPE_KEY) as FuelType) ?? "all"
   );
-  // Location and radius live here so they survive tab switches
   const [location, setLocation] = useState<LocationState | null>(() => {
     try {
       const raw = localStorage.getItem(LOCATION_KEY);
@@ -37,7 +41,6 @@ export default function App() {
   const [radius, setRadius] = useState<number>(() =>
     parseInt(localStorage.getItem(RADIUS_KEY) ?? "5", 10)
   );
-
   const [favorites, setFavorites] = useState<FavoriteStation[]>([]);
   const [favError, setFavError]   = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
@@ -45,12 +48,30 @@ export default function App() {
     (localStorage.getItem(DEFAULT_TAB_KEY) as Tab) ?? "nearby"
   );
 
-  // Persist preferences
+  // ── New settings ──────────────────────────────────────────────────
+  const [sortFuel, setSortFuel] = useState<SortFuel>(() =>
+    (localStorage.getItem(SORT_FUEL_KEY) as SortFuel) ?? "e10"
+  );
+  const [consumption, setConsumption] = useState<number>(() =>
+    parseFloat(localStorage.getItem(CONSUMPTION_KEY) ?? "8.0")
+  );
+  const [fillVolume, setFillVolume] = useState<number>(() =>
+    parseFloat(localStorage.getItem(FILL_VOLUME_KEY) ?? "40")
+  );
+  const [detourFactor, setDetourFactor] = useState<number>(() =>
+    parseFloat(localStorage.getItem(DETOUR_FACTOR_KEY) ?? "1.3")
+  );
+
+  // ── Persist all preferences ───────────────────────────────────────
   useEffect(() => { localStorage.setItem(FUEL_TYPE_KEY, selectedFuel); }, [selectedFuel]);
   useEffect(() => { localStorage.setItem(RADIUS_KEY, String(radius)); }, [radius]);
   useEffect(() => {
     if (location) localStorage.setItem(LOCATION_KEY, JSON.stringify(location));
   }, [location]);
+  useEffect(() => { localStorage.setItem(SORT_FUEL_KEY, sortFuel); }, [sortFuel]);
+  useEffect(() => { localStorage.setItem(CONSUMPTION_KEY, String(consumption)); }, [consumption]);
+  useEffect(() => { localStorage.setItem(FILL_VOLUME_KEY, String(fillVolume)); }, [fillVolume]);
+  useEffect(() => { localStorage.setItem(DETOUR_FACTOR_KEY, String(detourFactor)); }, [detourFactor]);
 
   useEffect(() => {
     getFavorites()
@@ -145,6 +166,63 @@ export default function App() {
                 </button>
               </div>
             </div>
+
+            <div className="settings-row">
+              <label className="settings-label">Price sort fuel</label>
+              <div className="settings-toggle">
+                {(["e5", "e10", "diesel", "cheapest"] as SortFuel[]).map((f) => (
+                  <button
+                    key={f}
+                    className={`fuel-btn${sortFuel === f ? " active" : ""}`}
+                    onClick={() => setSortFuel(f)}
+                  >
+                    {f === "cheapest" ? "Cheapest" : f.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="settings-row">
+              <label className="settings-label">Consumption</label>
+              <div className="settings-input-group">
+                <input
+                  type="number"
+                  className="settings-input"
+                  min={1} max={30} step={0.5}
+                  value={consumption}
+                  onChange={(e) => setConsumption(parseFloat(e.target.value) || 0)}
+                />
+                <span className="settings-unit">L / 100 km</span>
+              </div>
+            </div>
+
+            <div className="settings-row">
+              <label className="settings-label">Fill volume</label>
+              <div className="settings-input-group">
+                <input
+                  type="number"
+                  className="settings-input"
+                  min={10} max={120} step={5}
+                  value={fillVolume}
+                  onChange={(e) => setFillVolume(parseFloat(e.target.value) || 0)}
+                />
+                <span className="settings-unit">L</span>
+              </div>
+            </div>
+
+            <div className="settings-row">
+              <label className="settings-label">Detour factor</label>
+              <select
+                className="settings-select"
+                value={detourFactor}
+                onChange={(e) => setDetourFactor(parseFloat(e.target.value))}
+              >
+                <option value={1.0}>1.0× — straight line</option>
+                <option value={1.2}>1.2× — urban</option>
+                <option value={1.3}>1.3× — mixed (default)</option>
+                <option value={1.5}>1.5× — rural</option>
+              </select>
+            </div>
           </div>
         )}
 
@@ -183,6 +261,10 @@ export default function App() {
             onToggleFavorite={handleToggleFavorite}
             onLocation={handleLocation}
             onRadiusChange={setRadius}
+            sortFuel={sortFuel}
+            consumption={consumption}
+            fillVolume={fillVolume}
+            detourFactor={detourFactor}
           />
         )}
         {tab === "favorites" && (
@@ -190,13 +272,17 @@ export default function App() {
             favorites={favorites}
             selectedFuel={selectedFuel}
             onToggleFavorite={handleToggleFavorite}
+            sortFuel={sortFuel}
+            consumption={consumption}
+            fillVolume={fillVolume}
+            detourFactor={detourFactor}
           />
         )}
       </main>
 
       {/* ── Sticky footer ── */}
       <footer className="app-footer">
-        Fuel data:{" "}
+        v{__APP_VERSION__} · Fuel data:{" "}
         <a href="https://www.tankerkoenig.de" target="_blank" rel="noreferrer">
           Tankerkönig
         </a>{" "}
