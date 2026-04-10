@@ -100,14 +100,18 @@ export default function Favorites({
   );
   const sortedFavorites = sortStations(openFavorites, sortBy, fuel, prices);
 
-  // Baseline: first station in sorted list with a valid price
-  const baselineStation = sortedFavorites.find(
-    (s) => typeof pickPrice(s, prices[s.id], fuel) === "number"
-  );
-  const baselinePrice = baselineStation
-    ? pickPrice(baselineStation, prices[baselineStation.id], fuel)
-    : undefined;
-  const baselineDist = baselineStation?.dist ?? 0;
+  // Baseline: station with the lowest price for the effective fuel, independent of sort order
+  let baselinePrice: number | false | undefined;
+  let baselineDist = 0;
+  for (const s of openFavorites) {
+    const p = pickPrice(s, prices[s.id], fuel);
+    if (typeof p === "number") {
+      if (typeof baselinePrice !== "number" || p < baselinePrice) {
+        baselinePrice = p;
+        baselineDist = s.dist ?? 0;
+      }
+    }
+  }
 
   return (
     <div className="page-layout">

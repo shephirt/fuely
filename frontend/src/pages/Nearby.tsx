@@ -84,14 +84,18 @@ export default function Nearby({
   const openStations = stations.filter((s) => s.isOpen);
   const sortedStations = sortStations(openStations, sortBy, fuel);
 
-  // Find baseline: first station in sorted list with a valid price
-  const baselineStation = sortedStations.find(
-    (s) => typeof pickPrice(s, undefined, fuel) === "number"
-  );
-  const baselinePrice = baselineStation
-    ? pickPrice(baselineStation, undefined, fuel)
-    : undefined;
-  const baselineDist = baselineStation?.dist ?? 0;
+  // Baseline: station with the lowest price for the effective fuel, independent of sort order
+  let baselinePrice: number | false | undefined;
+  let baselineDist = 0;
+  for (const s of openStations) {
+    const p = pickPrice(s, undefined, fuel);
+    if (typeof p === "number") {
+      if (typeof baselinePrice !== "number" || p < baselinePrice) {
+        baselinePrice = p;
+        baselineDist = s.dist ?? 0;
+      }
+    }
+  }
 
   return (
     <div className="page-layout">
