@@ -103,6 +103,10 @@ a:hover { text-decoration: underline; }
   align-items: center;
   gap: 16px;
   flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.settings-row:last-child {
+  margin-bottom: 0;
 }
 .settings-label {
   font-size: 13px;
