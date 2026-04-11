@@ -1,0 +1,69 @@
+name: PR Guard – Main Branch Policy
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - reopened
+      - labeled
+      - unlabeled
+      - synchronize
+
+jobs:
+  check-pr-policy:
+    name: Check PR Source & Labels
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
+
+    steps:
+      - name: Evaluate PR policy
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const sourceBranch = pr.head.ref;
+            const labels = pr.labels.map(l => l.name);
+
+            const isFromStaging = sourceBranch === 'staging';
+            const hasChoreLabel = labels.includes('chore');
+
+            if (isFromStaging || hasChoreLabel) {
+              console.log(`✅ PR ist erlaubt. Branch: "${sourceBranch}", Labels: [${labels.join(', ')}]`);
+              return;
+            }
+
+            // PR entspricht nicht der Richtlinie → Kommentar + schließen
+            const comment = [
+              '## ❌ PR nicht erlaubt',
+              '',
+              'Dieser Pull Request erfüllt **nicht** die Merge-Richtlinie für den `main` Branch.',
+              '',
+              '**Erlaubt sind ausschließlich:**',
+              '- Pull Requests aus dem Branch `staging`',
+              '- Pull Requests mit dem Label `chore`',
+              '',
+              `**Dieser PR:** Branch \\`${sourceBranch}\, Labels: \\`${labels.length ? labels.join(', ') : '(keine)'}\`,
+              '',
+              'Bitte schließe diesen PR und öffne ihn korrekt, oder passe Branch bzw. Label entsprechend an.',
+            ].join('\n');
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr.number,
+              body: comment,
+            });
+
+            await github.rest.pulls.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pr.number,
+              state: 'closed',
+            });
+
+            core.setFailed(`PR von Branch "${sourceBranch}" ohne Label "chore" ist nicht erlaubt und wurde geschlossen.`);
+          
