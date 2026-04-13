@@ -250,6 +250,7 @@ a:hover { text-decoration: underline; }
   flex: 1;              /* takes remaining height between header and footer */
   min-height: 0;        /* allow flex child to shrink below content size */
   overflow-y: auto;     /* only this scrolls */
+  overflow-x: clip;     /* prevent horizontal overflow; clip avoids iOS Safari blank-screen bug */
   padding: var(--content-pad);
   /* inner content centred */
   display: flex;
@@ -551,6 +552,8 @@ a:hover { text-decoration: underline; }
   padding: 13px 15px;
   box-shadow: var(--shadow);
   transition: border-color 0.15s;
+  min-width: 0;
+  max-width: 100%;
 }
 .station-card.clickable { cursor: pointer; }
 .station-card.clickable:hover { border-color: var(--color-accent); }
@@ -570,6 +573,7 @@ a:hover { text-decoration: underline; }
   align-items: flex-start;
   gap: 8px;
   margin-bottom: 5px;
+  min-width: 0;
 }
 .station-name-row {
   display: flex;
@@ -669,7 +673,7 @@ a:hover { text-decoration: underline; }
   font-weight: 500;
   color: var(--color-text-muted);
   margin-top: 2px;
-  white-space: nowrap;
+  white-space: normal;
 }
 
 .station-footer {
