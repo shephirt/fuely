@@ -17,6 +17,8 @@ A self-hosted, real-time fuel price web app for Germany — powered by the [Tank
 - **Home address** — set a home address in Settings; Favourites will compute distances and detour costs from home instead of your current location
 - **Responsive** — mobile, tablet, and desktop layouts; sort filter opens as a floating overlay on mobile so the page never shifts
 
+*Completely vibe coded.*
+
 ---
 
 ## Prerequisites
@@ -158,5 +160,3 @@ docker pull ghcr.io/shephirt/fuely:v1.2.3
 [MIT](LICENSE) © 2026 [shephirt](https://github.com/shephirt)
 
 ---
-
-*Completely vibe coded.*
