@@ -3,6 +3,9 @@
 # Docs: https://docs.github.com/en/repositories/releasing-projects-on-github/automatically-generated-release-notes
 
 changelog:
+  exclude:
+    labels:
+      - skip-changelog   # PRs with this label are omitted from release notes entirely
   categories:
     - title: "New Features"
       labels:
