@@ -26,10 +26,17 @@ jobs:
           VERSION_PLAIN="${VERSION#v}"
           GIT_REVISION="${GITHUB_SHA::7}"
           BUILD_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          # Pre-release: version string contains a hyphen (e.g. v1.0.0-beta.1)
+          if [[ "${VERSION_PLAIN}" == *-* ]]; then
+            IS_PRERELEASE="true"
+          else
+            IS_PRERELEASE="false"
+          fi
           echo "version=${VERSION}"             >> "$GITHUB_OUTPUT"
           echo "version_plain=${VERSION_PLAIN}" >> "$GITHUB_OUTPUT"
           echo "git_revision=${GIT_REVISION}"   >> "$GITHUB_OUTPUT"
           echo "build_date=${BUILD_DATE}"       >> "$GITHUB_OUTPUT"
+          echo "is_prerelease=${IS_PRERELEASE}" >> "$GITHUB_OUTPUT"
 
       # ── 3. Set up Docker Buildx ────────────────────────────────────
       - name: Set up Docker Buildx
@@ -44,7 +51,11 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       # ── 5. Build and push image ────────────────────────────────────
-      - name: Build and push Docker image
+      # Stable releases get both the versioned tag and :latest.
+      # Pre-releases (version contains a hyphen) get the versioned tag only —
+      # :latest is never overwritten by a beta/rc/alpha image.
+      - name: Build and push Docker image (stable)
+        if: steps.meta.outputs.is_prerelease == 'false'
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -59,12 +70,28 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: Build and push Docker image (pre-release)
+        if: steps.meta.outputs.is_prerelease == 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/shephirt/fuely:${{ steps.meta.outputs.version }}
+          build-args: |
+            VERSION=${{ steps.meta.outputs.version_plain }}
+            GIT_REVISION=${{ steps.meta.outputs.git_revision }}
+            BUILD_DATE=${{ steps.meta.outputs.build_date }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
       # ── 6. Create GitHub Release ───────────────────────────────────
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.meta.outputs.version }}
           name: "Fuely ${{ steps.meta.outputs.version }}"
+          prerelease: ${{ steps.meta.outputs.is_prerelease }}
           generate_release_notes: true
           body: |
             ## Docker image
