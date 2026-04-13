@@ -17,7 +17,11 @@ A self-hosted, real-time fuel price web app for Germany — powered by the [Tank
 - **Home address** — set a home address in Settings; Favourites will compute distances and detour costs from home instead of your current location
 - **Responsive** — mobile, tablet, and desktop layouts; sort filter opens as a floating overlay on mobile so the page never shifts
 
-*Completely vibe coded.*
+---
+
+## AI Disclaimer
+
+This app is *Completely vibe coded.* I see this as an experiment for myself what is possible with AI only by describing my issue or need. Still i want to share my results with the community. I want to highlight that technolgies have been used, which i absolutley do not understand.
 
 ---
 
