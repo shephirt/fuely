@@ -13,7 +13,7 @@ on:
 
 jobs:
   check-pr-policy:
-    name: Check PR Source & Labels
+    name: Check PR source branch
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
@@ -32,38 +32,30 @@ jobs:
             const hasChoreLabel = labels.includes('chore');
 
             if (isFromStaging || hasChoreLabel) {
-              console.log(`✅ PR ist erlaubt. Branch: "${sourceBranch}", Labels: [${labels.join(', ')}]`);
+              console.log(`PR allowed. Source: "${sourceBranch}", Labels: [${labels.join(', ')}]`);
               return;
             }
 
-            // PR entspricht nicht der Richtlinie → Kommentar + schließen
-            const comment = [
-              '## ❌ PR nicht erlaubt',
-              '',
-              'Dieser Pull Request erfüllt **nicht** die Merge-Richtlinie für den `main` Branch.',
-              '',
-              '**Erlaubt sind ausschließlich:**',
-              '- Pull Requests aus dem Branch `staging`',
-              '- Pull Requests mit dem Label `chore`',
-              '',
-              `**Dieser PR:** Branch \\`${sourceBranch}\, Labels: \\`${labels.length ? labels.join(', ') : '(keine)'}\`,
-              '',
-              'Bitte schließe diesen PR und öffne ihn korrekt, oder passe Branch bzw. Label entsprechend an.',
-            ].join('\n');
-
+            // Post a comment explaining the policy
+            const labelList = labels.length ? labels.join(', ') : '(none)';
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: pr.number,
-              body: comment,
+              body: [
+                '## PR blocked — main branch policy',
+                '',
+                'Only the following PRs may target `main`:',
+                '- PRs from the `staging` branch',
+                '- PRs with the `chore` label',
+                '',
+                `**This PR:** source branch \`${sourceBranch}\`, labels: \`${labelList}\``,
+                '',
+                'Please retarget this PR to `staging`, or add the `chore` label if this is a maintenance change.',
+              ].join('\n'),
             });
 
-            await github.rest.pulls.update({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: pr.number,
-              state: 'closed',
-            });
-
-            core.setFailed(`PR von Branch "${sourceBranch}" ohne Label "chore" ist nicht erlaubt und wurde geschlossen.`);
-          
+            core.setFailed(
+              `PRs into main must come from "staging" or carry the "chore" label. ` +
+              `This PR is from "${sourceBranch}" with labels: [${labelList}].`
+            );
