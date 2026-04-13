@@ -1,4 +1,4 @@
-name: PR Guard – Main Branch Policy
+name: PR Guard
 
 on:
   pull_request:
@@ -12,50 +12,61 @@ on:
       - synchronize
 
 jobs:
-  check-pr-policy:
-    name: Check PR source branch
+  # ── Policy check ─────────────────────────────────────────────────────
+  # Passes when the PR comes from "staging" OR carries the "chore" label.
+  # Set this job ("Source branch policy") as a required status check in
+  # Settings → Branches → main → Branch protection rules.
+  policy:
+    name: Source branch policy
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
-      contents: read
 
     steps:
-      - name: Evaluate PR policy
+      - name: Check source branch and labels
+        env:
+          SOURCE_BRANCH: ${{ github.event.pull_request.head.ref }}
+          LABELS: ${{ toJson(github.event.pull_request.labels.*.name) }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
         uses: actions/github-script@v7
         with:
           script: |
-            const pr = context.payload.pull_request;
-            const sourceBranch = pr.head.ref;
-            const labels = pr.labels.map(l => l.name);
+            const source = process.env.SOURCE_BRANCH;
+            const labels = JSON.parse(process.env.LABELS);
+            const prNumber = parseInt(process.env.PR_NUMBER, 10);
 
-            const isFromStaging = sourceBranch === 'staging';
-            const hasChoreLabel = labels.includes('chore');
+            const allowed = source === 'staging' || labels.includes('chore');
 
-            if (isFromStaging || hasChoreLabel) {
-              console.log(`PR allowed. Source: "${sourceBranch}", Labels: [${labels.join(', ')}]`);
+            if (allowed) {
+              console.log(`✅ Allowed — source: "${source}", labels: [${labels.join(', ')}]`);
               return;
             }
 
-            // Post a comment explaining the policy
             const labelList = labels.length ? labels.join(', ') : '(none)';
+
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              issue_number: pr.number,
+              issue_number: prNumber,
               body: [
-                '## PR blocked — main branch policy',
+                '## ❌ PR blocked — `main` branch policy',
                 '',
-                'Only the following PRs may target `main`:',
-                '- PRs from the `staging` branch',
-                '- PRs with the `chore` label',
+                'Pull requests into `main` must either:',
+                '- originate from the `staging` branch, **or**',
+                '- carry the `chore` label (for maintenance / hotfix changes)',
                 '',
-                `**This PR:** source branch \`${sourceBranch}\`, labels: \`${labelList}\``,
+                '| | Value |',
+                '|---|---|',
+                `| **Source branch** | \`${source}\` |`,
+                `| **Labels** | ${labelList} |`,
                 '',
-                'Please retarget this PR to `staging`, or add the `chore` label if this is a maintenance change.',
+                '**What to do:**',
+                '- Retarget this PR to `staging` and merge it there first, or',
+                '- Add the `chore` label if this is a maintenance change that must go directly to `main`.',
               ].join('\n'),
             });
 
             core.setFailed(
-              `PRs into main must come from "staging" or carry the "chore" label. ` +
-              `This PR is from "${sourceBranch}" with labels: [${labelList}].`
+              `PRs into main must come from "staging" or have the "chore" label. ` +
+              `Source: "${source}", labels: [${labelList}].`
             );
