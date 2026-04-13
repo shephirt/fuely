@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { RotateCw, ListFilter } from "lucide-react";
 import { getNearby } from "../api";
 import type { Station, FuelType, FavoriteStation } from "../types";
 import type { LocationState } from "../App";
@@ -41,6 +42,7 @@ export default function Nearby({
   const [error, setError] = useState<string | null>(null);
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
   const [sortBy, setSortBy] = useState<SortBy>("distance");
+  const [showSort, setShowSort] = useState(false);
   const [selectedStationId, setSelectedStationId] = useState<string | null>(null);
   const mapRef = useRef<MapHandle>(null);
   const cardRefs = useRef<Record<string, HTMLDivElement>>({});
@@ -150,43 +152,58 @@ export default function Nearby({
                 : ""}
           </span>
           <div className="toolbar-right">
-            <div className="sort-toggle">
+            {/* Backdrop — closes overlay on outside tap (mobile only) */}
+            {showSort && (
+              <div className="sort-backdrop" onClick={() => setShowSort(false)} />
+            )}
+            {/* Filter icon — mobile only, toggles sort options */}
+            <button
+              className={`btn-icon sort-filter-btn${sortBy !== "distance" ? " sort-filter-btn--active" : ""}`}
+              onClick={() => setShowSort((v) => !v)}
+              title="Sort options"
+              aria-label="Sort options"
+            >
+              <ListFilter size={16} />
+            </button>
+            {/* Sort options — always visible on desktop, overlay on mobile */}
+            <div className={`sort-toggle${showSort ? " sort-toggle--open" : ""}`}>
               <button
                 className={`sort-btn${sortBy === "distance" ? " active" : ""}`}
-                onClick={() => setSortBy("distance")}
+                onClick={() => { setSortBy("distance"); setShowSort(false); }}
                 title="Sort by distance"
               >
                 Distance
               </button>
               <button
                 className={`sort-btn${sortBy === "price" ? " active" : ""}`}
-                onClick={() => setSortBy("price")}
+                onClick={() => { setSortBy("price"); setShowSort(false); }}
                 title="Sort by price (selected fuel)"
               >
                 Price
               </button>
               <button
                 className={`sort-btn${sortBy === "cheapest" ? " active" : ""}`}
-                onClick={() => setSortBy("cheapest")}
+                onClick={() => { setSortBy("cheapest"); setShowSort(false); }}
                 title="Sort by net cost including detour (cheapest overall)"
               >
                 Cheapest
               </button>
               <button
                 className={`sort-btn${sortBy === "total-cost" ? " active" : ""}`}
-                onClick={() => setSortBy("total-cost")}
+                onClick={() => { setSortBy("total-cost"); setShowSort(false); }}
                 title="Sort by absolute total cost (drive + fill)"
               >
                 Total cost
               </button>
             </div>
             <button
-              className="btn-secondary"
+              className={`btn-icon refresh-btn${loading ? " spinning" : ""}`}
               onClick={fetchStations}
               disabled={loading || !location}
               title="Refresh prices"
+              aria-label="Refresh prices"
             >
-              {loading ? "…" : "⟳ Refresh"}
+              <RotateCw size={16} />
             </button>
           </div>
         </div>
