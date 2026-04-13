@@ -152,6 +152,10 @@ export default function Nearby({
                 : ""}
           </span>
           <div className="toolbar-right">
+            {/* Backdrop — closes overlay on outside tap (mobile only) */}
+            {showSort && (
+              <div className="sort-backdrop" onClick={() => setShowSort(false)} />
+            )}
             {/* Filter icon — mobile only, toggles sort options */}
             <button
               className={`btn-icon sort-filter-btn${sortBy !== "distance" ? " sort-filter-btn--active" : ""}`}
@@ -161,32 +165,32 @@ export default function Nearby({
             >
               <ListFilter size={16} />
             </button>
-            {/* Sort options — always visible on desktop, toggled on mobile */}
+            {/* Sort options — always visible on desktop, overlay on mobile */}
             <div className={`sort-toggle${showSort ? " sort-toggle--open" : ""}`}>
               <button
                 className={`sort-btn${sortBy === "distance" ? " active" : ""}`}
-                onClick={() => setSortBy("distance")}
+                onClick={() => { setSortBy("distance"); setShowSort(false); }}
                 title="Sort by distance"
               >
                 Distance
               </button>
               <button
                 className={`sort-btn${sortBy === "price" ? " active" : ""}`}
-                onClick={() => setSortBy("price")}
+                onClick={() => { setSortBy("price"); setShowSort(false); }}
                 title="Sort by price (selected fuel)"
               >
                 Price
               </button>
               <button
                 className={`sort-btn${sortBy === "cheapest" ? " active" : ""}`}
-                onClick={() => setSortBy("cheapest")}
+                onClick={() => { setSortBy("cheapest"); setShowSort(false); }}
                 title="Sort by net cost including detour (cheapest overall)"
               >
                 Cheapest
               </button>
               <button
                 className={`sort-btn${sortBy === "total-cost" ? " active" : ""}`}
-                onClick={() => setSortBy("total-cost")}
+                onClick={() => { setSortBy("total-cost"); setShowSort(false); }}
                 title="Sort by absolute total cost (drive + fill)"
               >
                 Total cost

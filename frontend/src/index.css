@@ -408,10 +408,17 @@ a:hover { text-decoration: underline; }
   cursor: pointer;
   font-size: 17px;
   padding: 5px 9px;
-  transition: color 0.15s, background 0.15s;
+  transition: color 0.15s, background 0.15s, border-color 0.15s;
   line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .btn-icon:hover { color: var(--color-text); background: var(--color-surface-2); }
+.btn-icon--active {
+  color: var(--color-accent) !important;
+  border-color: var(--color-accent);
+}
 
 /* ── Map ──────────────────────────────────────────────────────────── */
 .leaflet-map {
@@ -497,6 +504,7 @@ a:hover { text-decoration: underline; }
   display: flex;
   align-items: center;
   gap: 8px;
+  position: relative;  /* anchor for the sort overlay */
 }
 
 /* ── Sort toggle ──────────────────────────────────────────────────── */
@@ -526,16 +534,41 @@ a:hover { text-decoration: underline; }
 @media (max-width: 639px) {
   .sort-toggle {
     display: none;
-    flex-wrap: wrap;
-    width: 100%;
   }
   .sort-toggle--open {
+    /* Float below the toolbar-right, right-aligned — no layout shift */
     display: flex;
+    flex-direction: column;
+    gap: 2px;
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    z-index: 500;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    padding: 6px;
+    box-shadow: var(--shadow);
+    min-width: 160px;
   }
-  /* When open, toolbar-right wraps so the sort row drops below the icon pair */
-  .toolbar-right {
-    flex-wrap: wrap;
-    justify-content: flex-end;
+  .sort-toggle--open .sort-btn {
+    text-align: left;
+    padding: 8px 12px;
+    border-radius: 7px;
+    font-size: 13px;
+  }
+}
+
+/* Backdrop — transparent layer behind overlay, catches outside taps */
+.sort-backdrop {
+  display: none;
+}
+@media (max-width: 639px) {
+  .sort-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 499;
   }
 }
 
