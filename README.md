@@ -8,11 +8,20 @@ A self-hosted, real-time fuel price web app for Germany — powered by the [Tank
 
 ## Features
 
-- **Nearby stations** — find petrol stations within a configurable radius using GPS or address search
-- **Live prices** — E5, E10, Diesel or all fuel types, with manual refresh
-- **Interactive map** — Leaflet / OpenStreetMap; click any card to fly to that station
-- **Favourites** — save stations server-side; prices refresh on demand
-- **Responsive** — mobile, tablet, and desktop layouts
+- **Nearby stations** — find petrol stations within a configurable radius (1 – 25 km) using GPS or address search
+- **Live prices** — E5, E10, Diesel, or all fuel types, refreshed on demand
+- **Interactive map** — Leaflet / OpenStreetMap; click any card to fly to that station, click any map marker to scroll to the matching card
+- **Favourites** — save stations server-side; prices refresh automatically when you open the tab
+- **Cost-aware sorting** — sort by distance, price, cheapest overall (net detour cost), or total cost (drive + fill)
+- **Detour cost badge** — each card shows how much more or less a trip costs compared to the nearest station, accounting for your car's consumption, fill volume, and road detour factor
+- **Home address** — set a home address in Settings; Favourites will compute distances and detour costs from home instead of your current location
+- **Responsive** — mobile, tablet, and desktop layouts; sort filter opens as a floating overlay on mobile so the page never shifts
+
+---
+
+## AI Disclaimer
+
+This app is *Completely vibe coded.* I see this as an experiment for myself what is possible with AI only by describing my issue or need. Still i want to share my results with the community. I want to highlight that technolgies have been used, which i absolutley do not understand.
 
 ---
 
@@ -95,9 +104,28 @@ docker run --rm -v fuely-data:/data alpine cat /data/favorites.json > favorites-
 1. **Set your location** — open the **Nearby** tab and either click **Use GPS** or type an address into the search box.
 2. **Choose a radius** — use the radius selector (1 – 25 km) to narrow or widen the search.
 3. **Select fuel type** — use the toggle in the header to switch between E5, E10, Diesel, or All.
-4. **Refresh prices** — click **⟳ Refresh** above the station list at any time.
-5. **Save a favourite** — click the ☆ icon on any station card. It will appear in the **Favourites** tab.
-6. **Fly to a station on the map** — click anywhere on a station card to centre the map on that station.
+4. **Sort the list** — use the sort bar (or the filter icon on mobile) to order by Distance, Price, Cheapest, or Total cost.
+5. **Refresh prices** — click the refresh icon above the station list at any time.
+6. **Save a favourite** — click the ☆ icon on any station card. It will appear in the **Favourites** tab.
+7. **Fly to a station on the map** — click anywhere on a station card to centre the map on that station.
+8. **Settings** — click the settings icon in the header to configure default view, price sort fuel, consumption, fill volume, detour factor, and home address.
+
+---
+
+## Releases
+
+Fuely follows a tag-based release flow. Stable and pre-release images are both published to the GitHub Container Registry.
+
+| Tag pattern | Image tag(s) | GitHub Release |
+|---|---|---|
+| `v1.2.3` | `:v1.2.3` + `:latest` | Stable |
+| `v1.2.3-beta.1` | `:v1.2.3-beta.1` only | Pre-release (`:latest` never updated) |
+
+To pull a specific release:
+
+```bash
+docker pull ghcr.io/shephirt/fuely:v1.2.3
+```
 
 ---
 
@@ -114,12 +142,12 @@ docker run --rm -v fuely-data:/data alpine cat /data/favorites.json > favorites-
 
 | Layer | Technology |
 |---|---|
-| Frontend | React 18, Vite, TypeScript, Leaflet / react-leaflet |
-| Backend | Node.js 20, Express, TypeScript |
+| Frontend | React 19, Vite, TypeScript, Leaflet / react-leaflet, lucide-react |
+| Backend | Node.js 25, Express 5, TypeScript |
 | Map tiles | OpenStreetMap (via Leaflet) |
 | Geocoding | Nominatim (OpenStreetMap) — no additional API key required |
 | Fuel data | [Tankerkönig API](https://creativecommons.tankerkoenig.de/) |
-| Container | Docker (multi-stage build, node:20-alpine, non-root user) |
+| Container | Docker (multi-stage build, node:25-alpine, non-root user) |
 | CI/CD | GitHub Actions → ghcr.io |
 
 ---
@@ -136,5 +164,3 @@ docker run --rm -v fuely-data:/data alpine cat /data/favorites.json > favorites-
 [MIT](LICENSE) © 2026 [shephirt](https://github.com/shephirt)
 
 ---
-
-*Completely vibe coded.*
