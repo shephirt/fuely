@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { Settings } from "lucide-react";
 import { getFavorites, addFavorite, removeFavorite } from "./api";
 import type { FuelType, FavoriteStation, Station } from "./types";
 import type { SortFuel } from "./utils/stationUtils";
@@ -150,12 +151,12 @@ export default function App() {
           <div className="header-controls">
             <FuelTypeToggle value={selectedFuel} onChange={setSelectedFuel} />
             <button
-              className="btn-icon"
+              className={`btn-icon${showSettings ? " btn-icon--active" : ""}`}
               onClick={() => setShowSettings((s) => !s)}
               title="Settings"
               aria-label="Settings"
             >
-              ⚙
+              <Settings size={17} />
             </button>
           </div>
         </div>
