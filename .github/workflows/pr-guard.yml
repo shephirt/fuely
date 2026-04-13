@@ -14,10 +14,56 @@ on:
 jobs:
   check-branch:
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
+
     steps:
+      # ── 1. Policy check ───────────────────────────────────────────────
       - name: Verify source branch
         if: github.head_ref != 'staging' && !contains(github.event.pull_request.labels.*.name, 'chore')
         run: |
           echo "PRs into main must come from the 'staging' branch or carry the 'chore' label."
           echo "Source branch: ${{ github.head_ref }}"
           exit 1
+
+      # ── 2. Comment + close on failure ────────────────────────────────
+      - name: Comment and close PR
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const source = pr.head.ref;
+            const labels = pr.labels.map(l => l.name);
+            const labelList = labels.length ? labels.map(l => `\`${l}\``).join(', ') : '_(none)_';
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr.number,
+              body: [
+                '## ❌ PR blocked — `main` branch policy',
+                '',
+                'Pull requests into `main` are only allowed from the `staging` branch.',
+                'The `chore` label can be used to bypass this rule for maintenance changes.',
+                '',
+                '| | |',
+                '|---|---|',
+                `| **Source branch** | \`${source}\` |`,
+                `| **Labels** | ${labelList} |`,
+                '',
+                '**What to do:**',
+                '- Retarget this PR to `staging` and merge it there first, or',
+                '- Add the `chore` label if this must go directly to `main`.',
+                '',
+                '_This PR has been closed automatically._',
+              ].join('\n'),
+            });
+
+            await github.rest.pulls.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pr.number,
+              state: 'closed',
+            });
