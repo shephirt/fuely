@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { RotateCw, ListFilter } from "lucide-react";
 import { getPrices } from "../api";
 import type { FavoriteStation, FuelType, PriceMap } from "../types";
 import type { SortFuel, SortBy, DetourResult } from "../utils/stationUtils";
@@ -33,6 +34,7 @@ export default function Favorites({
   const [error, setError] = useState<string | null>(null);
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
   const [sortBy, setSortBy] = useState<SortBy>("distance");
+  const [showSort, setShowSort] = useState(false);
   const [selectedStationId, setSelectedStationId] = useState<string | null>(null);
   const mapRef = useRef<MapHandle>(null);
   const cardRefs = useRef<Record<string, HTMLDivElement>>({});
@@ -174,7 +176,17 @@ export default function Favorites({
                 : "Prices not yet loaded"}
           </span>
           <div className="toolbar-right">
-            <div className="sort-toggle">
+            {/* Filter icon — mobile only, toggles sort options */}
+            <button
+              className={`btn-icon sort-filter-btn${sortBy !== "distance" ? " sort-filter-btn--active" : ""}`}
+              onClick={() => setShowSort((v) => !v)}
+              title="Sort options"
+              aria-label="Sort options"
+            >
+              <ListFilter size={16} />
+            </button>
+            {/* Sort options — always visible on desktop, toggled on mobile */}
+            <div className={`sort-toggle${showSort ? " sort-toggle--open" : ""}`}>
               <button
                 className={`sort-btn${sortBy === "distance" ? " active" : ""}`}
                 onClick={() => setSortBy("distance")}
@@ -205,12 +217,13 @@ export default function Favorites({
               </button>
             </div>
             <button
-              className="btn-secondary"
+              className={`btn-icon refresh-btn${loading ? " spinning" : ""}`}
               onClick={fetchAllPrices}
               disabled={loading}
               title="Refresh prices now"
+              aria-label="Refresh prices"
             >
-              {loading ? "…" : "⟳ Refresh"}
+              <RotateCw size={16} />
             </button>
           </div>
         </div>

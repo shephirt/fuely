@@ -523,6 +523,54 @@ a:hover { text-decoration: underline; }
 .sort-btn:hover { background: var(--color-border); color: var(--color-text); }
 .sort-btn.active { background: var(--color-accent); color: #fff; }
 
+/* Mobile: sort toggle hidden until .sort-toggle--open, filter button visible */
+@media (max-width: 639px) {
+  .sort-toggle {
+    display: none;
+    flex-wrap: wrap;
+    width: 100%;
+  }
+  .sort-toggle--open {
+    display: flex;
+  }
+  /* When open, toolbar-right wraps so the sort row drops below the icon pair */
+  .toolbar-right {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+}
+
+/* Desktop: filter button hidden, sort toggle always visible */
+@media (min-width: 640px) {
+  .sort-filter-btn {
+    display: none !important;
+  }
+}
+
+/* Filter icon button (mobile only) */
+.sort-filter-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 8px;
+}
+.sort-filter-btn--active {
+  color: var(--color-accent) !important;
+  border-color: var(--color-accent);
+}
+
+/* Refresh icon button */
+.refresh-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 8px;
+}
+
+/* Spin animation for refresh icon (pure rotation, no translate) */
+@keyframes icon-spin { to { transform: rotate(360deg); } }
+.spinning svg { animation: icon-spin 0.8s linear infinite; }
+
 /* ── Favorites toolbar (legacy alias kept for safety) ─────────────── */
 .favorites-toolbar {
   display: flex;
