@@ -56,7 +56,7 @@ jobs:
       # :latest is never overwritten by a beta/rc/alpha image.
       - name: Build and push Docker image (stable)
         if: steps.meta.outputs.is_prerelease == 'false'
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           push: true
@@ -72,7 +72,7 @@ jobs:
 
       - name: Build and push Docker image (pre-release)
         if: steps.meta.outputs.is_prerelease == 'true'
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           push: true
