@@ -1,5 +1,5 @@
 # ── Stage 0: Generate lock files ─────────────────────────────────────
-FROM node:25-alpine AS lockfile-gen
+FROM node:26-alpine AS lockfile-gen
 
 WORKDIR /frontend
 COPY frontend/package.json ./
@@ -12,7 +12,7 @@ RUN --mount=type=cache,target=/root/.npm \
     npm install --package-lock-only
 
 # ── Stage 1: Build frontend ───────────────────────────────────────────
-FROM node:25-alpine AS frontend-builder
+FROM node:26-alpine AS frontend-builder
 
 # Injected by CI from the git tag; falls back to "dev" for local builds
 ARG VERSION=dev
@@ -29,7 +29,7 @@ COPY frontend/ ./
 RUN npm run build
 
 # ── Stage 2: Build backend ────────────────────────────────────────────
-FROM node:25-alpine AS backend-builder
+FROM node:26-alpine AS backend-builder
 
 WORKDIR /app
 
@@ -42,7 +42,7 @@ COPY backend/ ./
 RUN npx tsc
 
 # ── Stage 3: Runtime ──────────────────────────────────────────────────
-FROM node:25-alpine AS runtime
+FROM node:26-alpine AS runtime
 
 # Build-time arguments injected by CI (fall back to "dev" for local builds)
 ARG VERSION=dev
